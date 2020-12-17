@@ -29,6 +29,12 @@ $signature = $postBody["signature"];
 
 logActivity('response: ' . json_encode($postBody));
 logActivity('response: ' . json_encode($_POST));
+logActivity('response: ' . json_encode($HTTP_RAW_POST_DATA));
+
+$resA = json_decode($_POST, true);
+foreach ($resA as $k => $v) {
+    logActivity('response: ' . $k . ' => ' . $v);
+}
 logActivity($transactionType);
 logActivity($orderId);
 logActivity($transactionId);
