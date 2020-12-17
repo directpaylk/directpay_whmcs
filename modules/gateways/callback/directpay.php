@@ -29,6 +29,15 @@ $signature = $postBody["signature"];
 
 logActivity('response: ' . gettype(json_encode($postBody)));
 logActivity('response: ' . gettype($postBody));
+logActivity('response: sizeof: ' . sizeof($postBody));
+foreach ($postBody as $k) {
+    logActivity('foreach 1 : ' . $k);
+    logActivity('foreach 1_2 : ' . gettype($k));
+    logActivity('foreach 1_2 : ' . json_encode($k));
+}
+foreach ($postBody as $k => $v) {
+    logActivity('foreach 2 : ' . $k . ' => ' . $v);
+}
 logActivity('response: ' . gettype(json_encode($_POST)));
 logActivity('response: ' . gettype(json_decode($HTTP_RAW_POST_DATA)));
 logActivity('response: ' . gettype(json_decode($http_response_header)));
@@ -36,10 +45,10 @@ logActivity('response: ' . gettype(json_decode($HTTP_POST_VARS)));
 logActivity('response: ' . gettype(json_decode($HTTP_SESSION_VARS)));
 logActivity('response: ' . gettype(json_decode($HTTP_SERVER_VARS)));
 
-$resA = json_decode($_POST, true);
-foreach ($resA as $k => $v) {
-    logActivity('response: ' . $k . ' => ' . $v);
-}
+//$resA = json_decode($_POST, true);
+//foreach ($resA as $k => $v) {
+//    logActivity('response: ' . $k . ' => ' . $v);
+//}
 logActivity($transactionType);
 logActivity($orderId);
 logActivity($transactionId);
