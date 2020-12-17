@@ -27,7 +27,7 @@ $transactionStatus = $postBody["status"];
 $transactionDesc = $postBody["desc"];
 $signature = $postBody["signature"];
 
-logActivity('response: ' . json_encode($postBody));
+logActivity('response: ' . gettype(json_encode($postBody)));
 logActivity('response: ' . gettype(json_encode($_POST)));
 logActivity('response: ' . gettype(json_decode($HTTP_RAW_POST_DATA)));
 logActivity('response: ' . gettype(json_decode($http_response_header)));
