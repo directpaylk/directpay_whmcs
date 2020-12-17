@@ -1,0 +1,14 @@
+*
+!.gitignore
+!modules/
+!modules/gateways/
+!modules/gateways/directpay.php
+!modules/gateways/directpay/
+!modules/gateways/directpay/helpers.php
+!modules/gateways/callback/
+!modules/gateways/callback/directpay.php
+!scripts/
+!scripts/*
+!appspec.yml
+
+
