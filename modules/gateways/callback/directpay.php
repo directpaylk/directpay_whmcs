@@ -28,6 +28,7 @@ $transactionDesc = $postBody["desc"];
 $signature = $postBody["signature"];
 
 logActivity('response: ' . json_encode($postBody));
+logActivity('response: ' . json_encode($_POST));
 logActivity($transactionType);
 logActivity($orderId);
 logActivity($transactionId);
