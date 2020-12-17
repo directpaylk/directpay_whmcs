@@ -30,6 +30,10 @@ $signature = $postBody["signature"];
 logActivity('response: ' . json_encode($postBody));
 logActivity('response: ' . json_encode($_POST));
 logActivity('response: ' . json_encode($HTTP_RAW_POST_DATA));
+logActivity('response: ' . json_encode($http_response_header));
+logActivity('response: ' . json_encode($HTTP_POST_VARS));
+logActivity('response: ' . json_encode($HTTP_SESSION_VARS));
+logActivity('response: ' . json_encode($HTTP_SERVER_VARS));
 
 $resA = json_decode($_POST, true);
 foreach ($resA as $k => $v) {

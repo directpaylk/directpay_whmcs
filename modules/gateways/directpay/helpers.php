@@ -692,7 +692,7 @@ function getPaymentSessionURL($params)
         $requestData = [
             "merchant_id" => $merchantId,
             "amount" => $amount ? (string)$amount : "0.00",
-            "type" => "ONE_TIME_DIRECT",
+            "type" => "ONE_TIME",
             "order_id" => (string)$orderId,
             "currency" => $currencyCode,
             "response_url" => $responseUrl,
