@@ -45,6 +45,8 @@ logActivity('response: ' . gettype(json_decode($HTTP_RAW_POST_DATA)));
 
 logActivity('$postBody_raw: ' . gettype($postBody_raw));
 logActivity('$postBody_raw: ' . sizeof($postBody_raw));
+logActivity('$postBody_raw: ' . json_encode($postBody_raw));
+logActivity('$postBody_raw: ' . $postBody_raw);
 foreach ($postBody_raw as $res) {
     logActivity('$postBody_raw: IN-FOREACH 1 ' . gettype($res));
     logActivity('$postBody_raw: IN-FOREACH 2 ' . $res);
