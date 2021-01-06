@@ -55,19 +55,140 @@ function directpay_config()
             'Default' => '',
             'Description' => 'Paste your public key string here',
         ),
-        'hashKey' => array(
-            'FriendlyName' => 'URL hash key',
-            'Type' => 'textarea',
+        'secret' => array(
+            'FriendlyName' => 'Secret Key',
+            'Type' => 'text',
+            'Size' => '191',
             'Default' => '',
-            'Description' => 'Strong random string',
+            'Description' => 'Secret Key string from DirectPay',
         ),
-        'testMode' => array(
+        'sandBox' => array(
             'FriendlyName' => 'SandBox Mode',
             'Type' => 'yesno',
-            'Description' => 'Enable sand box mode',
+            'Description' => 'Enable debug mode',
         ),
     );
 }
+//function directpay_link($params) {
+//    /* Gateway Configuration Parameters */
+//    $merchantId = $params['merchantId'];
+//    $privateKey = $params['secret'];
+//    $sandBox = $params['sandBox'];
+//
+//    /* Invoice Parameters*/
+//    $invoiceId = $params['invoiceid'];
+//    $description = $params["description"];
+//    $amount = $params['amount'];
+//    $currencyCode = $params['currency'];
+//
+//    // Client Parameters
+//    $firstName = $params['clientdetails']['firstname'];
+//    $lastName = $params['clientdetails']['lastname'];
+//    $fullName = $firstName . " " . $lastName;
+//    $email = $params['clientdetails']['email'];
+//    $address1 = $params['clientdetails']['address1'];
+//    $address2 = $params['clientdetails']['address2'];
+//    $city = $params['clientdetails']['city'];
+//    $state = $params['clientdetails']['state'];
+//    $postcode = $params['clientdetails']['postcode'];
+//    $country = $params['clientdetails']['country'];
+//    $phone = $params['clientdetails']['phonenumber'];
+//
+//    // System Parameters
+//    $companyName = $params['companyname'];
+//    $systemUrl = $params['systemurl'];
+//    $returnUrl = $params['returnurl']; // http://localhost/whmcs/viewinvoice.php?id=4
+//    $langPayNow = $params['langpaynow'];
+//    $moduleDisplayName = $params['name'];
+//    $moduleName = $params['paymentmethod'];
+//    $whmcsVersion = $params['whmcsVersion'];
+//
+//    $orderId = substr($merchantId, 1) . $invoiceId;
+//    $hmacSecret = $privateKey;
+//
+//    $responseUrl = $systemUrl . 'modules/gateways/callback/' . $moduleName . '.php?invoice=' . $invoiceId . '&amount=' . $amount;
+//
+//    // API Connection Details
+//    $gatewayUrl = "https://test-gateway.directpay.lk/api/v3/create-session";
+//    if ($sandBox == 'off') {
+//        $gatewayUrl = "https://gateway.directpay.lk/api/v3/create-session";
+//    }
+//
+//    $mainProductOfRecurring = getRecurringItem($invoiceId);
+//
+//    // Set post values
+//    if ($mainProductOfRecurring != null) {
+//        // TODO : Recurring Item
+//
+//        $priceResult = getPriceDetails($invoiceId, $mainProductOfRecurring);
+//
+//        $requestData = [
+//            "merchant_id" => $merchantId,
+//            "amount" => $amount ? (string)$amount : "0.00",
+//            "source" => "DirectPay_WHMCS_v1.1",
+//            "payment_category" => "PAYMENT_LINK",
+//            "type" => "RECURRING",
+//            "order_id" => (string)$orderId,
+//            "currency" => $currencyCode,
+//            "return_url" => $returnUrl,
+//            "response_url" => $responseUrl,
+//            "first_name" => $firstName,
+//            "last_name" => $lastName,
+//            "email" => $email,
+//            "phone" => $phone,
+//            "start_date" => date("Y-m-d"),
+//            "end_date" => $mainProductOfRecurring->recurringDuration,
+//            "do_initial_payment" => true,
+//            "initial_amount" => $priceResult->startupTotal,
+//            "interval" => $mainProductOfRecurring->recurringPeriod,
+//        ];
+//        do_log('got recurring');
+//    } else {
+//        $requestData = [
+//            "merchant_id" => $merchantId,
+//            "amount" => $amount ? (string)$amount : "0.00",
+//            "type" => "ONE_TIME",
+//            "order_id" => (string)$orderId,
+//            "currency" => $currencyCode,
+//            "response_url" => $responseUrl,
+//            "return_url" => $returnUrl,
+//            "logo" => ''
+//        ];
+//    }
+//
+//    $dataString = base64_encode(json_encode($requestData));
+//    $signature = 'hmac ' . hash_hmac('sha256', $dataString, $hmacSecret);
+//
+//    // Call the API
+//    $ch = curl_init();
+//
+//    curl_setopt_array($ch, array(
+//        CURLOPT_URL => $gatewayUrl,
+//        CURLOPT_RETURNTRANSFER => true,
+//        CURLOPT_ENCODING => "",
+//        CURLOPT_MAXREDIRS => 10,
+//        CURLOPT_TIMEOUT => 30,
+//        CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+//        CURLOPT_CUSTOMREQUEST => "POST",
+//        CURLOPT_POSTFIELDS => base64_encode(json_encode($requestData)),
+//        CURLOPT_HTTPHEADER => [
+//            "Content-Type: application/json",
+//            "Authorization: $signature",
+//        ],
+//    ));
+//
+//    $response = curl_exec($ch);
+//    if (curl_error($ch)) {
+//        do_log('Unable to connect: ' . curl_errno($ch) . ' - ' . curl_error($ch));
+//    }
+//    curl_close($ch);
+//
+//    // Decode response
+//    //    $jsonData = json_decode($response, true);
+//
+//    // Dump array structure for inspection
+//    return json_decode($response);
+//}
 
 function directpay_link($params)
 {
