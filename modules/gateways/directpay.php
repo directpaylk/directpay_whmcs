@@ -230,7 +230,7 @@ function directpay_link($params)
     $moduleName = $params['paymentmethod'];
     $whmcsVersion = $params['whmcsVersion'];
 
-    $orderId = substr($merchantId, 1) . $invoiceId;
+    $orderId = 'WH' . substr($merchantId, 1) . $invoiceId;
 
     $responseUrl = $systemUrl . 'modules/gateways/callback/' . $moduleName . '.php?invoice=' . $invoiceId . '&amount=' . $amount;
 
