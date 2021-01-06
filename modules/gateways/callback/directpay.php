@@ -50,6 +50,7 @@ logActivity('$postBody_raw: ' . $postBody_raw);
 logActivity('$postBody_raw-base64_decode: ' . base64_decode($postBody_raw));
 logActivity('$postBody_raw-base64_decode: ' . gettype(base64_decode(json_decode($postBody_raw))));
 logActivity('$postBody_raw-base64_decode-json-decode: ' . base64_decode(json_decode($postBody_raw)));
+logActivity('$postBody_raw-base64_decode-json-decode: ' . base64_decode(json_decode($postBody_raw))['type']);
 foreach (base64_decode(json_decode($postBody_raw)) as $res) {
     logActivity('$postBody_raw: IN-FOREACH 1 ' . gettype($res));
     logActivity('$postBody_raw: IN-FOREACH 2 ' . $res);
