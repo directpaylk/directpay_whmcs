@@ -17,7 +17,8 @@ if (!$gatewayParams['type']) {
 }
 
 // Retrieve data returned in payment gateway callback
-$postBody = (array)json_decode(file_get_contents('php://input'));
+$postBody_raw = file_get_contents('php://input');
+$postBody = (array)json_decode($postBody_raw);
 
 //logActivity('Message goes here', 0);
 $transactionType = $postBody["type"];
@@ -39,11 +40,17 @@ foreach ($postBody as $k => $v) {
     logActivity('foreach 2 : ' . $k . ' => ' . $v);
 }
 logActivity('response: ' . gettype(json_encode($_POST)));
+logActivity('$_POST : ' . json_encode($_POST));
 logActivity('response: ' . gettype(json_decode($HTTP_RAW_POST_DATA)));
-logActivity('response: ' . gettype(json_decode($http_response_header)));
-logActivity('response: ' . gettype(json_decode($HTTP_POST_VARS)));
-logActivity('response: ' . gettype(json_decode($HTTP_SESSION_VARS)));
-logActivity('response: ' . gettype(json_decode($HTTP_SERVER_VARS)));
+
+logActivity('$postBody_raw: ' . gettype($postBody_raw));
+logActivity('$postBody_raw: ' . sizeof($postBody_raw));
+foreach ($postBody_raw as $res) {
+    logActivity('$postBody_raw: IN-FOREACH 1 ' . gettype($res));
+    logActivity('$postBody_raw: IN-FOREACH 2 ' . $res);
+    logActivity('$postBody_raw: IN-FOREACH 3 ' . json_encode($res));
+    logActivity('$postBody_raw: IN-FOREACH 4 ' . json_decode($res));
+}
 
 //$resA = json_decode($_POST, true);
 //foreach ($resA as $k => $v) {
