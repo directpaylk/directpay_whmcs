@@ -15,8 +15,9 @@ $gatewayParams = getGatewayVariables($gatewayModuleName);
 if (!$gatewayParams['type']) {
     die("Module Not Activated");
 }
-
+logTransaction($gatewayModuleName, $_POST, 'pending');
 logActivity(file_get_contents('php://input'));
+
 
 //// Retrieve data returned in payment gateway callback
 //$postBody_raw = file_get_contents('php://input');
