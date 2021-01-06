@@ -193,7 +193,7 @@ function directpay_config()
 function directpay_link($params)
 {
     // Gateway Configuration Parameters
-    $hashKey = $params['hashKey'];
+    $secret = $params['secret'];
     $merchantId = $params['merchantId'];
     $privateKey = $params['privateKey'];
     $testMode = $params['testMode'];
@@ -230,17 +230,97 @@ function directpay_link($params)
     $moduleName = $params['paymentmethod'];
     $whmcsVersion = $params['whmcsVersion'];
 
-    $pluginName = "DirectPay_WHMCS";
-    $pluginVersion = 'v1.1';
+    $orderId = substr($merchantId, 1) . $invoiceId;
 
-    $getSession = getPaymentSessionURL($params);
+    $responseUrl = $systemUrl . 'modules/gateways/callback/' . $moduleName . '.php?invoice=' . $invoiceId . '&amount=' . $amount;
+
+    // API Connection Details
+    $gatewayUrl = "https://test-gateway.directpay.lk/api/v3/create-session";
+    if ($testMode == 'off') {
+        $gatewayUrl = "https://gateway.directpay.lk/api/v3/create-session";
+    }
+
+    $mainProductOfRecurring = getRecurringItem($invoiceId);
+
+    // Set post values
+    if ($mainProductOfRecurring != null) {
+        // TODO : Recurring Item
+
+        $priceResult = getPriceDetails($invoiceId, $mainProductOfRecurring);
+
+        $requestData = [
+            "merchant_id" => $merchantId,
+            "amount" => $amount ? (string)$amount : "0.00",
+            "source" => "DirectPay_WHMCS_v1.1",
+            "payment_category" => "PAYMENT_LINK",
+            "type" => "RECURRING",
+            "order_id" => (string)$orderId,
+            "currency" => $currencyCode,
+            "return_url" => $returnUrl,
+            "response_url" => $responseUrl,
+            "first_name" => $firstName,
+            "last_name" => $lastName,
+            "email" => $email,
+            "phone" => $phone,
+            "start_date" => date("Y-m-d"),
+            "end_date" => $mainProductOfRecurring->recurringDuration,
+            "do_initial_payment" => true,
+            "initial_amount" => $priceResult->startupTotal,
+            "interval" => $mainProductOfRecurring->recurringPeriod,
+        ];
+        do_log('got recurring');
+    } else {
+        $requestData = [
+            "merchant_id" => $merchantId,
+            "amount" => $amount ? (string)$amount : "0.00",
+            "source" => "DirectPay_WHMCS_v1.1",
+            "type" => "ONE_TIME",
+            "order_id" => (string)$orderId,
+            "currency" => $currencyCode,
+            "response_url" => $responseUrl,
+            "return_url" => $returnUrl,
+            "first_name" => $firstName,
+            "last_name" => $lastName,
+            "email" => $email,
+            "phone" => $phone,
+            "logo" => ''
+        ];
+    }
+
+    $dataString = base64_encode(json_encode($requestData));
+    $signature = 'hmac ' . hash_hmac('sha256', $dataString, $secret);
+
+    // Call the API
+    $ch = curl_init();
+
+    curl_setopt_array($ch, array(
+        CURLOPT_URL => $gatewayUrl,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_ENCODING => "",
+        CURLOPT_MAXREDIRS => 10,
+        CURLOPT_TIMEOUT => 30,
+        CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+        CURLOPT_CUSTOMREQUEST => "POST",
+        CURLOPT_POSTFIELDS => base64_encode(json_encode($requestData)),
+        CURLOPT_HTTPHEADER => [
+            "Content-Type: application/json",
+            "Authorization: $signature",
+        ],
+    ));
+
+    $response = curl_exec($ch);
+    if (curl_error($ch)) {
+        do_log('Unable to connect: ' . curl_errno($ch) . ' - ' . curl_error($ch));
+    }
+    curl_close($ch);
+
+    $getSession = json_decode($response);
 
     if ($getSession->status == 200) {
         do_log($getSession->status);
         do_log($getSession->data->link);
         $link = $getSession->data->link;
         $paymentRedirect = $link;
-//        header("Location: $link");
     } else {
         //TODO getSession failed
         $paymentRedirect = '';
@@ -250,7 +330,6 @@ function directpay_link($params)
     return '<form method="GET" action="' . $paymentRedirect . '">
                 <img src="https://cdn.directpay.lk/live/gateway/dp_visa_master_logo.png" alt="DirectPay Payment" width="20%" min-width="200px" />
             </form>';
-
 
 }
 
