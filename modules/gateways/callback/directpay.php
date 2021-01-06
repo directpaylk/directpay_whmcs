@@ -17,7 +17,7 @@ if (!$gatewayParams['type']) {
 }
 
 // Retrieve data returned in payment gateway callback
-print_r($_REQUEST);
+print_r($_POST);
 $postBody_raw = file_get_contents('php://input');
 $postBody = (array)json_decode($postBody_raw);
 
