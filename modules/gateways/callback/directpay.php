@@ -15,7 +15,7 @@ $gatewayParams = getGatewayVariables($gatewayModuleName);
 if (!$gatewayParams['type']) {
     die("Module Not Activated");
 }
-logTransaction($gatewayModuleName, $_POST, 'pending');
+logTransaction($gatewayModuleName, file_get_contents('php://input'), 'pending1');
 logActivity(file_get_contents('php://input'));
 
 
