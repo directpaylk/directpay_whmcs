@@ -16,19 +16,15 @@ if (!$gatewayParams['type']) {
     die("Module Not Activated");
 }
 
-function getRequestHeaders() {
-    $headers = array();
-    foreach($_SERVER as $key => $value) {
-        if (substr($key, 0, 5) <> 'HTTP_') {
-            continue;
-        }
-        $header = str_replace(' ', '-', ucwords(str_replace('_', ' ', strtolower(substr($key, 5)))));
-        $headers[$header] = $value;
-    }
-    return $headers;
-}
 
-$headers = getRequestHeaders();
+$headers = array();
+foreach ($_SERVER as $key => $value) {
+    if (substr($key, 0, 5) <> 'HTTP_') {
+        continue;
+    }
+    $header = str_replace(' ', '-', ucwords(str_replace('_', ' ', strtolower(substr($key, 5)))));
+    $headers[$header] = $value;
+}
 
 
 // TODO Remove these ->> BEGIN
@@ -100,7 +96,6 @@ $postBody = json_decode(base64_decode($postBody_raw), true);
 logActivity('PAYMENT RESPONSE - headers: ' . json_encode($headers));
 logActivity('PAYMENT RESPONSE - body: ' . $postBody_raw);
 logActivity('PAYMENT RESPONSE - invoice_id: ' . $_GET['invoice']);
-logActivity('PAYMENT RESPONSE - amount: ' . $_GET['amount']);
 
 //logActivity('Message goes here', 0);
 $transactionType = $postBody["type"];
@@ -174,8 +169,7 @@ $invoiceId = checkCbInvoiceID($invoiceId, $gatewayParams['name']);
  *
  * @param string $transactionId Unique Transaction ID
  */
- checkCbTransID($transactionId);
-
+checkCbTransID($transactionId);
 
 
 /**
@@ -186,24 +180,24 @@ $invoiceId = checkCbInvoiceID($invoiceId, $gatewayParams['name']);
  * The debug data can be a string or an array. In the case of an
  * array it will be
  *
- * @param string $gatewayName        Display label
- * @param string|array $debugData    Data to log
- * @param string $transactionStatus  Status
+ * @param string $gatewayName Display label
+ * @param string|array $debugData Data to log
+ * @param string $transactionStatus Status
  */
 logTransaction($gatewayParams['name'], json_encode($postBody), $transactionStatus);
 
 if ($success) {
-    if($transactionStatus == 'SUCCESS') {
+    if ($transactionStatus == 'SUCCESS') {
         /**
          * Add Invoice Payment.
          *
          * Applies a payment transaction entry to the given invoice ID.
          *
-         * @param int $invoiceId         Invoice ID
-         * @param string $transactionId  Transaction ID
-         * @param float $paymentAmount   Amount paid (defaults to full balance)
-         * @param float $paymentFee      Payment fee (optional)
-         * @param string $gatewayModule  Gateway module name
+         * @param int $invoiceId Invoice ID
+         * @param string $transactionId Transaction ID
+         * @param float $paymentAmount Amount paid (defaults to full balance)
+         * @param float $paymentFee Payment fee (optional)
+         * @param string $gatewayModule Gateway module name
          */
         addInvoicePayment(
             $invoiceId,
