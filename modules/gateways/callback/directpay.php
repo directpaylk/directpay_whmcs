@@ -16,66 +16,6 @@ if (!$gatewayParams['type']) {
     die("Module Not Activated");
 }
 
-// TODO Remove these ->> BEGIN
-/*
- * HEADERS - Postman
- *
- * */
-
-//Array
-//(
-//    [Content-Type] => text/plain
-//    [User-Agent] => PostmanRuntime/7.26.8
-//    [Host] => whmcstest.directpay.lk
-//    [Cookie] => WHMCSy551iLvnhYt7=adcabb5949c5e2b9ab53ce3a82da4cef
-//    [Content-Length] => 880
-//    [Connection] => keep-alive
-//    [Accept-Encoding] => gzip, deflate, br
-//    [Postman-Token] => 05f18e7e-0525-421f-9cf2-d0e32ef93119
-//    [Accept] => */*
-//)
-
-/*
- * Headers - Gateway
- *
- * */
-
-//Array
-//(
-//    [Content-Type] => text/plain
-//    [User-Agent] => GuzzleHttp/7
-//    [Host] => whmcstest.directpay.lk
-//    [Authorization] => hmac 10f40642743f115460b6c4afce9a44ae0c4915560b4d566a74a0b28f8ef5f861
-//)
-
-//{
-//    "channel": "MASTERCARD",
-//  "type": "ONE_TIME",
-//  "order_id": "D0217212",
-//  "transaction_id": "101036",
-//  "status": "SUCCESS",
-//  "card_id": null,
-//  "description": null,
-//  "card_mask": "511111xxxxxx1118",
-//  "customer": {
-//    "name": "testF testL",
-//    "email": "test4@admin.com",
-//    "mobile": "0767664928"
-//  },
-//  "transaction": {
-//    "id": "101036",
-//    "status": "SUCCESS",
-//    "description": "Approved",
-//    "message": "SUCCESS",
-//    "amount": "3.00",
-//    "currency": "LKR"
-//  }
-//}
-
-
-// TODO Remove these ->> END
-
-
 // Retrieve data returned in payment gateway callback
 $postBody_raw = file_get_contents('php://input');
 $postBody = json_decode(base64_decode($postBody_raw), true);
@@ -105,42 +45,19 @@ $paymentAmount = isset($postBody["transaction"]) ? $postBody["transaction"]["amo
 $paymentCurrency = isset($postBody["transaction"]) ? $postBody["transaction"]["currency"] : "LKR";
 $invoiceId = $_GET['invoice'];
 
-logActivity($invoiceId);
-logActivity($transactionType);
-logActivity($orderId);
-logActivity($transactionId);
-logActivity($transactionStatus);
-logActivity($transactionDesc);
-logActivity($paymentAmount);
-logActivity($paymentCurrency);
-logActivity($gatewayParams['secret']);
-
 $success = false;
+$responseValidation = '';
 $authHeaders = explode(' ', $headers['Authorization']);
 
 if (count($authHeaders) == 2) {
     $hash = hash_hmac('sha256', $postBody_raw, $gatewayParams['secret']);
     if (strcmp($authHeaders[1], $hash) == 0) {
         $success = true;
-        logTransaction(
-            $gatewayParams['name'],
-            'Invoice ID: ' . $invoiceId,
-            'Signature Verification Successful'
-        );
-
     } else {
-        logTransaction(
-            $gatewayParams['name'],
-            'Invoice ID: ' . $invoiceId,
-            'Signature Verification Failed'
-        );
+        $responseValidation = ' - Signature Verification Failed';
     }
 } else {
-    logTransaction(
-        $gatewayParams['name'],
-        'Invoice ID: ' . $invoiceId,
-        'Invalid Signature'
-    );
+    $responseValidation = ' - Invalid Signature';
 }
 
 /**
@@ -183,7 +100,7 @@ checkCbTransID($transactionId);
  * @param string|array $debugData Data to log
  * @param string $transactionStatus Status
  */
-logTransaction($gatewayParams['name'], json_encode($postBody), $transactionStatus);
+logTransaction($gatewayParams['name'], json_encode($postBody), $transactionStatus . $responseValidation);
 
 if ($success) {
     if ($transactionStatus == 'SUCCESS') {
