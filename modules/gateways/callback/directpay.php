@@ -15,18 +15,6 @@ $gatewayParams = getGatewayVariables($gatewayModuleName);
 if (!$gatewayParams['type']) {
     die("Module Not Activated");
 }
-logActivity("Got Response");
-logActivity(json_encode($_SERVER));
-
-$headers = array();
-foreach ($_SERVER as $key => $value) {
-    if (substr($key, 0, 5) <> 'HTTP_') {
-        continue;
-    }
-    $header = str_replace(' ', '-', ucwords(str_replace('_', ' ', strtolower(substr($key, 5)))));
-    $headers[$header] = $value;
-}
-
 
 // TODO Remove these ->> BEGIN
 /*
@@ -60,8 +48,6 @@ foreach ($_SERVER as $key => $value) {
 //    [Authorization] => hmac 10f40642743f115460b6c4afce9a44ae0c4915560b4d566a74a0b28f8ef5f861
 //)
 
-print_r($headers);
-
 //{
 //    "channel": "MASTERCARD",
 //  "type": "ONE_TIME",
@@ -94,9 +80,20 @@ print_r($headers);
 $postBody_raw = file_get_contents('php://input');
 $postBody = json_decode(base64_decode($postBody_raw), true);
 
-logActivity('PAYMENT RESPONSE - headers: ' . json_encode($headers));
-logActivity('PAYMENT RESPONSE - body: ' . $postBody_raw);
 logActivity('PAYMENT RESPONSE - invoice_id: ' . $_GET['invoice']);
+logActivity('PAYMENT RESPONSE - body: ' . $postBody_raw);
+
+$headers = array();
+foreach ($_SERVER as $key => $value) {
+    if (substr($key, 0, 5) <> 'HTTP_') {
+        continue;
+    }
+    $header = str_replace(' ', '-', ucwords(str_replace('_', ' ', strtolower(substr($key, 5)))));
+    $headers[$header] = $value;
+}
+
+print_r($headers);
+logActivity('PAYMENT RESPONSE - headers: ' . json_encode($headers));
 
 //logActivity('Message goes here', 0);
 $transactionType = $postBody["type"];
@@ -116,6 +113,7 @@ logActivity($transactionStatus);
 logActivity($transactionDesc);
 logActivity($paymentAmount);
 logActivity($paymentCurrency);
+logActivity($gatewayParams['secret']);
 
 $success = false;
 $authHeaders = explode(' ', $headers['Authorization']);

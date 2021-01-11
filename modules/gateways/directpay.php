@@ -92,7 +92,10 @@ function directpay_link($params)
 
     $orderId = 'WH' . substr($merchantId, 1) . $invoiceId;
 
-    $responseUrl = $systemUrl . 'modules/gateways/callback/' . $moduleName . '.php?invoice=' . $invoiceId;
+//    $responseUrl = $systemUrl . 'modules/gateways/callback/' . $moduleName . '.php?invoice=' . $invoiceId;
+    $responseUrl = 'https://' . $_SERVER['HTTP_HOST'] . '/modules/gateways/callback/' . $moduleName . '.php?invoice=' . $invoiceId;
+
+    do_log($responseUrl);
 
     // API Connection Details
     $gatewayUrl = "https://test-gateway.directpay.lk/api/v3/create-session";
