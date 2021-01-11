@@ -15,7 +15,8 @@ $gatewayParams = getGatewayVariables($gatewayModuleName);
 if (!$gatewayParams['type']) {
     die("Module Not Activated");
 }
-
+logActivity("Got Response");
+logActivity(json_encode($_SERVER));
 
 $headers = array();
 foreach ($_SERVER as $key => $value) {
