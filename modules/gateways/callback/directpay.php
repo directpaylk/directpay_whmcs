@@ -119,7 +119,7 @@ $success = false;
 $authHeaders = explode(' ', $headers['Authorization']);
 
 if (count($authHeaders) == 2) {
-    $hash = hash_hmac('sha256', $postBody, $gatewayParams['secret']);
+    $hash = hash_hmac('sha256', $postBody_raw, $gatewayParams['secret']);
     if (strcmp($authHeaders[1], $hash) == 0) {
         $success = true;
         logTransaction(
