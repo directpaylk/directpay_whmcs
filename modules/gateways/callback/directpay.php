@@ -100,7 +100,7 @@ checkCbTransID($transactionId);
  * @param string|array $debugData Data to log
  * @param string $transactionStatus Status
  */
-logTransaction($gatewayParams['name'], json_encode($postBody), $transactionStatus . $responseValidation);
+logTransaction($gatewayParams['name'], json_encode($postBody), "Invoice: " . $invoiceId . "Transaction Status: " . $transactionStatus . $responseValidation);
 
 if ($success) {
     if ($transactionStatus == 'SUCCESS') {
