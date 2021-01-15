@@ -260,33 +260,42 @@ function getRecurringInfo($interval, $recurringCycles)
         'recurring_forever' => false
     );
 
+
+    do_log($interval);
+    do_log($recurringCycles);
+
     if ($interval == INT_ONETIME || $recurringCycles == "ONETIME") { // TODO fix recurringClcles type issue
         // Do nothing
     } else if ($interval == INT_MONTHLY) {
-        do_log("was in this");
+        do_log("MONT was in this");
         $recurringItem['period'] = '1 Month';
         $recurringItem['duration'] = $recurringCycles . ' Month';
 //        $recurringItem['recurring_word'] = 'Month';
     } else if ($interval == INT_QUARTERLY) {
+        do_log("INT_QUARTERLY was in this");
         $recurringItem['period'] = '3 Month';
         $recurringItem['duration'] = (3 * $recurringCycles) . ' Month';
 //        $recurringItem['interval'] = 'Month';
 //        $recurringItem['recurring_modifier'] = 3;
     } else if ($interval == INT_BIANNUALLY) {
+        do_log("INT_BIANNUALLY was in this");
         $recurringItem['period'] = '6 Month';
         $recurringItem['duration'] = (6 * $recurringCycles) . ' Month';
 //        $recurring_info['recurring_word'] = 'Month';
 //        $recurring_info['recurring_modifier'] = 6;
     } else if ($interval == INT_ANNUALLY) {
+        do_log("INT_ANNUALLY was in this");
         $recurringItem['period'] = '1 Year';
         $recurringItem['duration'] = $recurringCycles . ' Year';
 //        $recurringItem['recurring_word'] = 'Year';
     } else if ($interval == INT_BIENNIALLY) {
+        do_log("INT_BIENNIALLY was in this");
         $recurringItem['period'] = '2 Year';
         $recurringItem['duration'] = (2 * $recurringCycles) . ' Year';
 //        $recurringItem['recurring_word'] = 'Year';
 //        $recurringItem['recurring_modifier'] = 2;
     } else if ($interval == INT_TRIENNIALLY) {
+        do_log("INT_TRIENNIALLY was in this");
         $recurringItem['period'] = '3 Year';
         $recurringItem['duration'] = (3 * $recurringCycles) . ' Year';
 //        $recurringItem['recurring_word'] = 'Year';
@@ -300,7 +309,6 @@ function getRecurringInfo($interval, $recurringCycles)
         $recurringItem['recurring_forever'] = true;
     }
 
-    do_log($interval);
 
     do_log("REcurringItem " . json_encode($recurringItem));
 
