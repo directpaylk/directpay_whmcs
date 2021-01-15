@@ -153,22 +153,8 @@ class PriceData
 
 function do_log($message)
 {
-    try {
-        $msg = $message;
-        if (strlen($msg) == 0) {
-            throw new Exception("DirectPay: String length 0 = \"" . $message . "\"");
-        } else {
-            $endsWithSpace = $msg[max(0, strlen($msg)) - 1] == ' ';
-//        if (DO_DEBUG === "true"){
-            if (!$endsWithSpace) {
-                $msg = $msg . ' ';
-            }
-
-            echo "<div><p style='padding: 2px 4px 2px 3px; margin: 3px 3px 1px 3px; display: inline-block; background-color: #9bffd9; border: 1px solid #00a063; border-radius: 5px;'>" . $msg . '</p></div>';
-//        }
-        }
-    } catch (Exception $e) {
-        echo "<div><p style='padding: 2px 4px 2px 3px; margin: 3px 3px 1px 3px; display: inline-block; background-color: #9bffd9; border: 1px solid #00a063; border-radius: 5px;'>EXCEPTION " . $e . '</p></div>';
+    if (false) {
+        echo "<div><p style='padding: 2px 4px 2px 3px; margin: 3px 3px 1px 3px; display: inline-block; background-color: #9bffd9; border: 1px solid #00a063; border-radius: 5px;'>" . $message . '</p></div>';
     }
 
 }
@@ -205,8 +191,6 @@ function getTaxByInvoice($id)
  */
 function getPriceDetails($invoiceId, $mainProduct)
 {
-    do_log('getStartupAndRecurrenceTotalForInvoiceWithFirstProduct invoked ');
-
     $startupFeeTotal = 0.0;
     $recurringTotal = 0.0;
 
@@ -214,31 +198,24 @@ function getPriceDetails($invoiceId, $mainProduct)
     foreach ($invoiceItems as $item) {
         $id = $item->id;
 
-        do_log("item->id " . $id);
-
         $paymentItem = getItemByInvoiceId($id);
 
-        // Consider the product's properties
-        // and act appropriately
-
         if (!$paymentItem->isRecurringButErrornous && $paymentItem->isRecurring && !$paymentItem->isUnknownProductType) {
-            // Is genuinely recurring
 
             if (($mainProduct->recurringPeriod == $paymentItem->recurringPeriod) && ($mainProduct->recurringDuration == $paymentItem->recurringDuration)) {
                 $startupFeeTotal += $paymentItem->recurringStartupFee;
                 $recurringTotal += $paymentItem->unitPrice;
-                do_log('Adding invoice item ' . $id . ' to cart as a recurring product startup fee = ' . $paymentItem->recurringStartupFee . ' unit price = ' . $paymentItem->unitPrice);
+                do_log('Invoice item ' . $id . ' | Recurring | startup fee: ' . $paymentItem->recurringStartupFee . ' | price: ' . $paymentItem->unitPrice);
             } else {
-                do_log('Skipping invoice item ' . $id);
+                do_log('Invoice item ' . $id . ' | Recurring period does not match');
             }
         } else if (!$paymentItem->isUnknownProductType && !$paymentItem->isRecurring) {
             // Is genuinely non-recurring (consider as a startup product)
             $startupFeeTotal += $paymentItem->unitPrice;
-            do_log('Adding invoice item ' . $id . ' to cart as a normal product AMT = ' . $paymentItem->unitPrice);
+            do_log('Invoice item ' . $id . ' | Item is not recurring: ' . $paymentItem->unitPrice);
         } else {
-            do_log('Unknown error with invoice item ' . $id . '');
+            do_log('Unknown invoice item ' . $id);
         }
-        do_log('loop status startup fee total = ' . $startupFeeTotal . ' recurring total = ' . $recurringTotal . ' ');
     }
 
     return new PriceData($startupFeeTotal, $recurringTotal);
@@ -253,16 +230,13 @@ function getPriceDetails($invoiceId, $mainProduct)
  */
 function getRecurringInfo($interval, $recurringCycles)
 {
-
     $recurringItem = array(
         'period' => '',
         'duration' => '',
         'recurring_forever' => false
     );
 
-    if (($interval == INT_ONETIME) || ($recurringCycles === "ONETIME")) { // TODO fix recurringClcles type issue
-        // Do nothing
-    } else if ($interval === INT_MONTHLY) {
+    if ($interval === INT_MONTHLY) {
 
         $date = new DateTime('now');
         $date->modify("+$recurringCycles month");
@@ -321,6 +295,8 @@ function getRecurringInfo($interval, $recurringCycles)
         $recurringItem['duration'] = $date;
         $recurringItem['period'] = "TRIENNIALLY";
 
+    } elseif (($interval == INT_ONETIME) || ($recurringCycles === "ONETIME")) { // TODO fix recurringClcles type issue
+        // Do nothing
     }
 
     if ($recurringCycles == 0) {
@@ -341,7 +317,6 @@ function getRecurringInfo($interval, $recurringCycles)
  */
 function getItemByInvoiceId($itemId)
 {
-
     $invoiceItem = Capsule::table('tblinvoiceitems')->where('id', '=', $itemId)->first();
 
     $paymentItem = new DirectPayPaymentItem();
@@ -356,9 +331,7 @@ function getItemByInvoiceId($itemId)
     $paymentItem->unitPrice = (double)$invoiceItem->amount;
     $paymentItem->invoiceItemId = $itemId;
 
-    if ($invoiceItemType == "setup") {
-        // Nothing to do here
-    } else if ($invoiceItemType == "hosting") {
+    if ($invoiceItemType == "hosting") {
 
         $hostingItem = Capsule::table('tblhosting')->where('id', '=', $invoiceItemRelId)->first();
 
@@ -415,11 +388,9 @@ function getItemByInvoiceId($itemId)
             $paymentItem->recurringDuration = $recurringItem['duration'];
 
             if ($unitPrice != $firstPaymentAmount) {
-                // A price override has been applied via product bundles.
                 $paymentItem->recurringStartupFee = $unitPrice - $recurringAmount;
                 $paymentItem->unitPrice = $recurringAmount;
             } else {
-                // There are no price overrides via product bundles.
                 $paymentItem->recurringStartupFee = $firstPaymentAmount - $recurringAmount;
                 $paymentItem->unitPrice = $recurringAmount;
             }
@@ -429,7 +400,6 @@ function getItemByInvoiceId($itemId)
         $addonItem = Capsule::table('tblhostingaddons')->where('id', '=', $invoiceItemRelId)->first();
 
         if (!$addonItem) {
-            do_log("Addon Item not found");
             throw new Exception("Addon Item not found");
         }
 
@@ -451,7 +421,6 @@ function getItemByInvoiceId($itemId)
         $item = Capsule::table('tblbillableitems')->where('id', '=', $invoiceItemRelId)->first();
 
         if (!$item) {
-            do_log("Billable Item not found");
             throw new Exception("Billable Item not found");
         }
 
@@ -523,8 +492,7 @@ function getItemByInvoiceId($itemId)
             $invRes = getPriceDetails($invoiceItemRelId, $mainProduct);
 
             if (!$invRes) {
-                do_log("Invoice result was null");
-                throw new Exception("Invoice result was null");
+                throw new Exception("Invoice result is null");
             }
 
             $paymentItem->isRecurring = true;
@@ -540,7 +508,6 @@ function getItemByInvoiceId($itemId)
         $hostingItem = Capsule::table('tblhosting')->where('id', '=', $invoiceItemRelId)->first();
 
         if (!$hostingItem) {
-            do_log("Hosting details could not be found while looking up Promotion");
             throw new Exception("Hosting details could not be found while looking up Promotion");
         }
 
@@ -567,30 +534,28 @@ function getItemByInvoiceId($itemId)
         $domainItem = Capsule::table('tbldomains')->where('id', '=', $invoiceItemRelId)->first();
 
         if (!$domainItem) {
-            do_log("Domain details could not be found whiling looking up Promotion");
             throw new Exception("Domain details could not be found whiling looking up Promotion");
         }
 
         $promotion = Capsule::table('tblpromotions')->where('id', '=', $domainItem->promoid)->first();
-        $promo_recurfor = $promotion->recurfor; // 0 means unlimited
 
         if ($promotion->recurring) {
             if ($domainItem->registrationperiod < 4) {
                 $paymentItem->isRecurring = true;
-                $paymentItem->recurringPeriod = "1 Year";
-                $paymentItem->recurringDuration = $domainItem->registrationperiod . " Year";
+                $paymentItem->recurringPeriod = "YEARLY";
+
+                $_cycles = $domainItem->registrationperiod * 12;
+                $date = new DateTime('now');
+                $date->modify("+$_cycles month");
+                $date = $date->format('Y-m-d');
+
+                $paymentItem->recurringDuration = $date;
             } else {
                 $paymentItem->isRecurring = true;
                 $paymentItem->isRecurringButErrornous = true;
             }
         }
-    } else if ($invoiceItemType == "" && $invoiceItemRelId == 0) { // Quote item
-        // Nothing to do here.
-        // This is just to prevent the
-        // `isUnknownProductType` flag from being set
-        // on the consumable product in a less illogical way.
-    } else {
-        // Handle unknown product type
+    } elseif (!($invoiceItemType == "" && $invoiceItemRelId == 0) || $invoiceItemType != "setup") {
         $paymentItem->isUnknownProductType = true;
     }
 
@@ -632,132 +597,4 @@ function getRecurringItem($id)
     }
 
     return $recurringItem;
-}
-
-function getPaymentSessionURL($params)
-{
-//    // Gateway Configuration Parameters
-//    $hashKey = $params['hashKey'];
-//    $merchantId = $params['merchantId'];
-//    $privateKey = $params['privateKey'];
-//    $testMode = $params['testMode'];
-//    $apiKey = $params['apiKey'];
-////    $dropdownField = $params['dropdownField'];
-////    $radioField = $params['radioField'];
-////    $textareaField = $params['textareaField'];
-//
-//    // Invoice Parameters
-//    $invoiceId = $params['invoiceid'];
-//    $description = $params["description"];
-//    $amount = $params['amount'];
-//    $currencyCode = $params['currency'];
-//
-//    // Client Parameters
-//    $firstName = $params['clientdetails']['firstname'];
-//    $lastName = $params['clientdetails']['lastname'];
-//    $fullName = $firstName . " " . $lastName;
-//    $email = $params['clientdetails']['email'];
-//    $address1 = $params['clientdetails']['address1'];
-//    $address2 = $params['clientdetails']['address2'];
-//    $city = $params['clientdetails']['city'];
-//    $state = $params['clientdetails']['state'];
-//    $postcode = $params['clientdetails']['postcode'];
-//    $country = $params['clientdetails']['country'];
-//    $phone = $params['clientdetails']['phonenumber'];
-//
-//    // System Parameters
-//    $companyName = $params['companyname'];
-//    $systemUrl = $params['systemurl'];
-//    $returnUrl = $params['returnurl']; // http://localhost/whmcs/viewinvoice.php?id=4
-//    $langPayNow = $params['langpaynow'];
-//    $moduleDisplayName = $params['name'];
-//    $moduleName = $params['paymentmethod'];
-//    $whmcsVersion = $params['whmcsVersion'];
-//
-//    $orderId = substr($merchantId, 1) . $invoiceId;
-//    $hmacSecret = $privateKey;
-//
-//    $responseUrl = $systemUrl . 'modules/gateways/callback/' . $moduleName . '.php?invoice=' . $invoiceId . '&amount=' . $amount;
-//
-//    // API Connection Details
-//    $gatewayUrl = "https://test-gateway.directpay.lk/api/v3/create-session";
-//    if ($testMode == 'off') {
-//        $gatewayUrl = "https://gateway.directpay.lk/api/v3/create-session";
-//    }
-//
-//    $mainProductOfRecurring = getRecurringItem($invoiceId);
-//
-//    // Set post values
-//    if ($mainProductOfRecurring != null) {
-//        // TODO : Recurring Item
-//
-//        $priceResult = getPriceDetails($invoiceId, $mainProductOfRecurring);
-//
-//        $requestData = [
-//            "merchant_id" => $merchantId,
-//            "amount" => $amount ? (string)$amount : "0.00",
-//            "source" => "DirectPay_WHMCS_v1.1",
-//            "payment_category" => "PAYMENT_LINK",
-//            "type" => "RECURRING",
-//            "order_id" => (string)$orderId,
-//            "currency" => $currencyCode,
-//            "return_url" => $returnUrl,
-//            "response_url" => $responseUrl,
-//            "first_name" => $firstName,
-//            "last_name" => $lastName,
-//            "email" => $email,
-//            "phone" => $phone,
-//            "start_date" => date("Y-m-d"),
-//            "end_date" => $mainProductOfRecurring->recurringDuration,
-//            "do_initial_payment" => true,
-//            "initial_amount" => $priceResult->startupTotal,
-//            "interval" => $mainProductOfRecurring->recurringPeriod,
-//        ];
-//        do_log('got recurring');
-//    } else {
-//        $requestData = [
-//            "merchant_id" => $merchantId,
-//            "amount" => $amount ? (string)$amount : "0.00",
-//            "type" => "ONE_TIME",
-//            "order_id" => (string)$orderId,
-//            "currency" => $currencyCode,
-//            "response_url" => $responseUrl,
-//            "return_url" => $returnUrl,
-//            "logo" => ''
-//        ];
-//    }
-//
-//    $dataString = base64_encode(json_encode($requestData));
-//    $signature = 'hmac ' . hash_hmac('sha256', $dataString, $hmacSecret);
-//
-//    // Call the API
-//    $ch = curl_init();
-//
-//    curl_setopt_array($ch, array(
-//        CURLOPT_URL => $gatewayUrl,
-//        CURLOPT_RETURNTRANSFER => true,
-//        CURLOPT_ENCODING => "",
-//        CURLOPT_MAXREDIRS => 10,
-//        CURLOPT_TIMEOUT => 30,
-//        CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-//        CURLOPT_CUSTOMREQUEST => "POST",
-//        CURLOPT_POSTFIELDS => base64_encode(json_encode($requestData)),
-//        CURLOPT_HTTPHEADER => [
-//            "Content-Type: application/json",
-//            "Authorization: $signature",
-//        ],
-//    ));
-//
-//    $response = curl_exec($ch);
-//    if (curl_error($ch)) {
-//        do_log('Unable to connect: ' . curl_errno($ch) . ' - ' . curl_error($ch));
-//    }
-//    curl_close($ch);
-//
-//    // Decode response
-//    //    $jsonData = json_decode($response, true);
-//
-//    // Dump array structure for inspection
-//    return json_decode($response);
-
 }

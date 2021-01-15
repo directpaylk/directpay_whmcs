@@ -107,7 +107,6 @@ function directpay_link($params)
 
     // Set post values
     if ($mainProductOfRecurring != null) {
-        // TODO : Recurring Item
 
         $priceResult = getPriceDetails($invoiceId, $mainProductOfRecurring);
 
