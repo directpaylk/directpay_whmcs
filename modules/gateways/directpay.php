@@ -132,7 +132,7 @@ function directpay_link($params)
             "end_date" => $mainProductOfRecurring->recurringDuration,
             "do_initial_payment" => true,
             "initial_amount" => $priceResult->startupTotal,
-            "interval" => $mainProductOfRecurring->recurringPeriod,
+            "interval" => convertInterval($mainProductOfRecurring->recurringPeriod),
         ];
         do_log('requestData ' . json_encode($requestData));
         do_log('got recurring');
@@ -201,4 +201,24 @@ function directpay_link($params)
                 <img src="https://cdn.directpay.lk/live/gateway/dp_visa_master_logo.png" alt="DirectPay Payment" width="20%" min-width="200px" />
             </form>';
 
+}
+
+function convertInterval($interval)
+{
+    switch ($interval) {
+        case 'MONTHLY':
+            return 1;
+        case 'BIANNUAL':
+            return 2;
+        case 'YEARLY':
+            return 3;
+        case 'QUARTERLY':
+            return 4;
+        case 'BIENNIALLY':
+            return 5;
+        case 'TRIENNIALLY':
+            return 6;
+        default:
+            return $interval;
+    }
 }
