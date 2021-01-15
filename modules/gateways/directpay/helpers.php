@@ -267,7 +267,7 @@ function getRecurringInfo($interval, $recurringCycles)
 
     if (($interval == INT_ONETIME) || ($recurringCycles == "ONETIME")) { // TODO fix recurringClcles type issue
         // Do nothing
-        do_log("in do nothing");
+        do_log("in do nothing!!!");
     } else if ($interval == INT_MONTHLY) {
         do_log("MONT was in this");
         $recurringItem['period'] = '1 Month';
