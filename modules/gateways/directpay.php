@@ -104,15 +104,12 @@ function directpay_link($params)
     }
 
     $mainProductOfRecurring = getRecurringItem($invoiceId);
-    do_log("mainProductOfRecurring " . json_encode($mainProductOfRecurring));
 
     // Set post values
     if ($mainProductOfRecurring != null) {
         // TODO : Recurring Item
 
         $priceResult = getPriceDetails($invoiceId, $mainProductOfRecurring);
-
-        do_log("priceResult " . json_encode($priceResult));
 
         $requestData = [
             "merchant_id" => $merchantId,
@@ -157,8 +154,6 @@ function directpay_link($params)
     $dataString = base64_encode(json_encode($requestData));
     $signature = 'hmac ' . hash_hmac('sha256', $dataString, $secret);
 
-    do_log("signature " . $signature);
-
     // Call API and get payment session URL
     $ch = curl_init();
 
@@ -183,16 +178,12 @@ function directpay_link($params)
     }
     curl_close($ch);
 
-    do_log("response " . $response);
-
     $getSession = json_decode($response);
 
     if ($getSession->status == 200) {
-        do_log($getSession->data->link);
         $link = $getSession->data->link;
         $paymentRedirect = $link;
     } else {
-        //TODO getSession failed
         $paymentRedirect = $returnUrl;
     }
 

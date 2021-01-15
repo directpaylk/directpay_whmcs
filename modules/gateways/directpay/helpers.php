@@ -263,18 +263,15 @@ function getRecurringInfo($interval, $recurringCycles)
     if (($interval == INT_ONETIME) || ($recurringCycles === "ONETIME")) { // TODO fix recurringClcles type issue
         // Do nothing
     } else if ($interval === INT_MONTHLY) {
-        do_log("INT_MONTHLY");
-        $recurringItem['period'] = "MONTHLY";
 
         $date = new DateTime('now');
         $date->modify("+$recurringCycles month");
         $date = $date->format('Y-m-d');
 
         $recurringItem['duration'] = $date;
-//        $recurringItem['recurring_word'] = 'Month';
+        $recurringItem['period'] = "MONTHLY";
+
     } else if ($interval === INT_QUARTERLY) {
-        do_log("INT_QUARTERLY");
-        $recurringItem['period'] = "QUARTERLY";
 
         $_cycles = 3 * $recurringCycles;
         $date = new DateTime('now');
@@ -282,13 +279,9 @@ function getRecurringInfo($interval, $recurringCycles)
         $date = $date->format('Y-m-d');
 
         $recurringItem['duration'] = $date;
+        $recurringItem['period'] = "QUARTERLY";
 
-
-//        $recurringItem['interval'] = 'Month';
-//        $recurringItem['recurring_modifier'] = 3;
     } else if ($interval === INT_BIANNUALLY) {
-        do_log("INT_BIANNUALLY");
-        $recurringItem['period'] = "BIANNUAL";
 
         $_cycles = 6 * $recurringCycles;
         $date = new DateTime('now');
@@ -296,12 +289,9 @@ function getRecurringInfo($interval, $recurringCycles)
         $date = $date->format('Y-m-d');
 
         $recurringItem['duration'] = $date;
+        $recurringItem['period'] = "BIANNUAL";
 
-//        $recurring_info['recurring_word'] = 'Month';
-//        $recurring_info['recurring_modifier'] = 6;
     } else if ($interval === INT_ANNUALLY) {
-        do_log("INT_ANNUALLY");
-        $recurringItem['period'] = "YEARLY";
 
         $_cycles = 12 * $recurringCycles;
         $date = new DateTime('now');
@@ -309,11 +299,9 @@ function getRecurringInfo($interval, $recurringCycles)
         $date = $date->format('Y-m-d');
 
         $recurringItem['duration'] = $date;
+        $recurringItem['period'] = "YEARLY";
 
-//        $recurringItem['recurring_word'] = 'Year';
     } else if ($interval === INT_BIENNIALLY) {
-        do_log("INT_BIENNIALLY");
-        $recurringItem['period'] = "BIENNIALLY";
 
         $_cycles = 24 * $recurringCycles;
         $date = new DateTime('now');
@@ -321,13 +309,9 @@ function getRecurringInfo($interval, $recurringCycles)
         $date = $date->format('Y-m-d');
 
         $recurringItem['duration'] = $date;
+        $recurringItem['period'] = "BIENNIALLY";
 
-
-//        $recurringItem['recurring_word'] = 'Year';
-//        $recurringItem['recurring_modifier'] = 2;
     } else if ($interval === INT_TRIENNIALLY) {
-        do_log("INT_TRIENNIALLY");
-        $recurringItem['period'] = "TRIENNIALLY";
 
         $_cycles = 36 * $recurringCycles;
         $date = new DateTime('now');
@@ -335,24 +319,14 @@ function getRecurringInfo($interval, $recurringCycles)
         $date = $date->format('Y-m-d');
 
         $recurringItem['duration'] = $date;
+        $recurringItem['period'] = "TRIENNIALLY";
 
-
-//        $recurringItem['recurring_word'] = 'Year';
-//        $recurringItem['recurring_modifier'] = 3;
-    } else {
-        do_log('Unknown interval: "' . $interval . "\"");
     }
-
-
-    do_log("REcurringItem before - " . json_encode($recurringItem));
 
     if ($recurringCycles == 0) {
-        $recurringItem['duration'] = ''; // Forever
+        $recurringItem['duration'] = date("Y-m-d", strtotime("3000-1-1")); // Forever
         $recurringItem['recurring_forever'] = true;
     }
-
-
-    do_log("REcurringItem " . json_encode($recurringItem));
 
     return $recurringItem;
 }
@@ -377,14 +351,10 @@ function getItemByInvoiceId($itemId)
     $invoiceItemRelId = $invoiceItem->relid;
     $invoiceItemType = strtolower($invoiceItem->type);
 
-    do_log($invoiceItemType);
-
     // Initialize consumable product with information
     // common to all types of invoice items
     $paymentItem->unitPrice = (double)$invoiceItem->amount;
     $paymentItem->invoiceItemId = $itemId;
-
-    do_log($paymentItem->unitPrice);
 
     if ($invoiceItemType == "setup") {
         // Nothing to do here
@@ -393,13 +363,10 @@ function getItemByInvoiceId($itemId)
         $hostingItem = Capsule::table('tblhosting')->where('id', '=', $invoiceItemRelId)->first();
 
         if (!$hostingItem) {
-            do_log("Hosting Item not found");
             throw new Exception("Hosting Item not found");
         }
 
         $interval = strtoupper($hostingItem->billingcycle);
-
-        do_log($interval);
 
         if ($interval != "ONE TIME") {
 
@@ -415,13 +382,10 @@ function getItemByInvoiceId($itemId)
             $paymentItem->recurringDuration = $recurringItem['duration']; // End Date
         }
 
-        do_log(json_encode($paymentItem));
-
     } else if ($invoiceItemType == "domainregister" || $invoiceItemType == "domaintransfer" || $invoiceItemType == "domainrenew") {
         $domainItem = Capsule::table('tbldomains')->where('id', '=', $invoiceItemRelId)->first();
 
         if (!$domainItem) {
-            do_log("Domain Item not found");
             throw new Exception("Domain Item not found");
         }
 
