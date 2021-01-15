@@ -324,10 +324,14 @@ function getItemByInvoiceId($itemId)
     $invoiceItemRelId = $invoiceItem->relid;
     $invoiceItemType = strtolower($invoiceItem->type);
 
+    do_log($invoiceItemType);
+
     // Initialize consumable product with information
     // common to all types of invoice items
     $paymentItem->unitPrice = (double)$invoiceItem->amount;
     $paymentItem->invoiceItemId = $itemId;
+
+    do_log($paymentItem->unitPrice);
 
     if ($invoiceItemType == "setup") {
         // Nothing to do here
