@@ -299,6 +299,8 @@ function getRecurringInfo($interval, $recurringCycles)
         $recurringItem['recurring_forever'] = true;
     }
 
+    do_log($interval);
+
     do_log("REcurringItem " . json_encode($recurringItem));
 
     return $recurringItem;
