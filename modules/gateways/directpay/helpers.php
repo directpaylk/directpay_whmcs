@@ -10,64 +10,17 @@ const INT_ANNUALLY = "ANNUALLY";
 const INT_BIENNIALLY = "BIENNIALLY";
 const INT_TRIENNIALLY = "TRIENNIALLY";
 
-/**
- * A type to encapsulate recurring details
- * about a product in a unified manner
- */
+
 class DirectPayPaymentItem
 {
 
-    /**
-     * The invoice item it for this product
-     * @var string
-     */
-    public $invoiceItemId = "";
-
-    /**
-     * Is this product recurring?
-     * @var boolean
-     */
-    public $isRecurring = false;
-
-    /**
-     * Is this product recurring forever?
-     * @var boolean
-     */
-    public $isRecurringForever = false;
-
-    /**
-     * The recurring period
-     * interval
-     * @var string
-     */
-    public $recurringPeriod = "";
-
-    /**
-     * The recurring duration
-     * payment end date
-     * @var string
-     */
-    public $recurringDuration = "";
-
-    /**
-     * The start-up fee for this product.
-     * The default value is 0.0, if the product
-     * does not have a start-up fee or is not
-     * recurring
-     * @var float
-     */
-    public $recurringStartupFee = 0.0;
-
-    /**
-     * The amount of the product. If the product
-     * is not recurring then it is the equivalent
-     * of ```tblinvoiceitems->amount```.
-     * If the product is recurring, this value might
-     * or might not be equivalent to the amount
-     * supplied by the ```tblinvoiceitems``` table.
-     * @var float
-     */
-    public $unitPrice = 0.0;
+    public $_invoiceId = "";
+    public $_isRecurring = false;
+    public $_dontExpire = false;
+    public $_interval = "";
+    public $_endDate = "";
+    public $_paymentFee = 0.0;
+    public $_amount = 0.0;
 
     /**
      * If this value is true, it signifies that an
@@ -80,113 +33,68 @@ class DirectPayPaymentItem
      *
      * @var boolean
      */
-    public $isRecurringButErrornous = false;
+    public $_ambiguous = false;
 
-    /**
-     * Indicates that this product could not be
-     * used to construct the ```DirectPayPaymentItem```
-     * correctly, since the detail extractor cannot
-     * identifier it's product type
-     *
-     * @var boolean
-     */
-    public $isUnknownProductType = false;
+    public $_typeUnknown = false;
 
-    //public $tableName = "";
-    //public $relativeId = 0;
-
-    /**
-     * The total price of the product. If the
-     * product is recurring, this value is the total
-     * of the start-up fee and the unit price.
-     * Otherwise, it is equivalent to the
-     * unitprice.
-     *
-     * Use this method when retrieving the
-     * product's price, It is adivsed to not
-     * use the raw `recurringStartupFee` or
-     * `unitPrice`.
-     *
-     * @return double
-     */
     function getPrice()
     {
-        if ($this->isRecurring) {
-            return $this->unitPrice + $this->recurringStartupFee;
+        if ($this->_isRecurring) {
+            return $this->_amount + $this->_paymentFee;
         } else {
-            return $this->unitPrice;
+            return $this->_amount;
         }
     }
 }
 
-/**
- * A type to hold the final startup and
- * recurring total.
- */
+
 class PriceData
 {
-    /**
-     * The startup fee total for the invoice
-     * @var float
-     */
-    public $startupTotal = 0.0;
+    public $_startupTotal = 0.0;
+    public $_recurringTotal = 0.0;
 
-    /**
-     * The recurring total for the invoice
-     * @var float
-     */
-    public $recurringTotal = 0.0;
-
-    /**
-     * Constructs a new object
-     * @param float $starTot The startup total
-     * @param float $recTot The recurrence total
-     */
-    function __construct($starTot, $recTot)
+    function __construct($startup, $recurring)
     {
-        $this->startupTotal = $starTot;
-        $this->recurringTotal = $recTot;
+        $this->_startupTotal = $startup;
+        $this->_recurringTotal = $recurring;
     }
 }
 
-function do_log($message)
+function printToLog($message)
 {
-//    if (true) {
-        echo "<div><p style='padding: 2px 4px 2px 3px; margin: 3px 3px 1px 3px; display: inline-block; background-color: #9bffd9; border: 1px solid #00a063; border-radius: 5px;'>" . $message . '</p></div>';
-//    }
+    if (true) {
+        echo "
+            <div>
+                <p
+                    style=' padding: 10px; 
+                            margin: 5px; 
+                            display: inline-block; 
+                            background-color: white; 
+                            border: 2px solid red;
+                            font-weight: bold;
+                            letter-spacing: 1px;
+                            border-radius: 5px;'
+                >
+                    $message
+                </p>
+            </div>
+        ";
+    }
 
 }
 
-/**
- * Gets the tax total for an invoice.
- * Takes in to account whether the TaxType
- * configuration in WHMCS is set to Exclusive.
- * @param string $id
- * @return integer
- */
 function getTaxByInvoice($id)
 {
     $config = Capsule::table('tblconfiguration')->where('setting', '=', 'TaxType')->first();
 
     if ($config->value === "Exclusive") {
         $invoice = Capsule::table('tblinvoices')->where('id', '=', $id)->first();
-        $tax1 = $invoice->tax;
-        $tax2 = $invoice->tax2;
 
-        return $tax1 + $tax2;
-    } else {
-        return 0;
+        return $invoice->tax + $invoice->tax2;
     }
+    return 0;
 }
 
-/**
- * Returns the startup and recurrence total
- * for a given invoice
- * @param string $invoiceId
- * @param DirectPayPaymentItem $mainProduct
- * @return PriceData
- * @throws Exception
- */
 function getPriceDetails($invoiceId, $mainProduct)
 {
     $startupFeeTotal = 0.0;
@@ -198,40 +106,28 @@ function getPriceDetails($invoiceId, $mainProduct)
 
         $paymentItem = getItemByInvoiceId($id);
 
-        if (!$paymentItem->isRecurringButErrornous && $paymentItem->isRecurring && !$paymentItem->isUnknownProductType) {
+        if (!$paymentItem->_ambiguous && $paymentItem->_isRecurring && !$paymentItem->_typeUnknown) {
 
-            if (($mainProduct->recurringPeriod == $paymentItem->recurringPeriod) && ($mainProduct->recurringDuration == $paymentItem->recurringDuration)) {
-                $startupFeeTotal += $paymentItem->recurringStartupFee;
-                $recurringTotal += $paymentItem->unitPrice;
-                do_log('Invoice item ' . $id . ' | Recurring | startup fee: ' . $paymentItem->recurringStartupFee . ' | price: ' . $paymentItem->unitPrice);
-            } else {
-                do_log('Invoice item ' . $id . ' | Recurring period does not match');
+            if (($mainProduct->_interval == $paymentItem->_interval) && ($mainProduct->_endDate == $paymentItem->_endDate)) {
+                $startupFeeTotal += $paymentItem->_paymentFee;
+                $recurringTotal += $paymentItem->_amount;
+                printToLog('Invoice item ' . $id . ' | Recurring | startup fee: ' . $paymentItem->_paymentFee . ' | price: ' . $paymentItem->_amount);
             }
-        } else if (!$paymentItem->isUnknownProductType && !$paymentItem->isRecurring) {
-            // Is genuinely non-recurring (consider as a startup product)
-            $startupFeeTotal += $paymentItem->unitPrice;
-            do_log('Invoice item ' . $id . ' | Item is not recurring: ' . $paymentItem->unitPrice);
-        } else {
-            do_log('Unknown invoice item ' . $id);
+        } else if (!$paymentItem->_typeUnknown && !$paymentItem->_isRecurring) {
+            $startupFeeTotal += $paymentItem->_amount;
+            printToLog('Invoice item ' . $id . ' | Item is not recurring: ' . $paymentItem->_amount);
         }
     }
 
     return new PriceData($startupFeeTotal, $recurringTotal);
 }
 
-/**
- * Returns the Recurring Period and Recurring Duration
- * based on the billing cycle and recurring cycle count.
- * @param string $interval
- * @param integer $recurringCycles
- * getRecurringInfoForBillingCycle
- */
 function getRecurringInfo($interval, $recurringCycles)
 {
     $recurringItem = array(
-        'period' => '',
-        'duration' => '',
-        'recurring_forever' => false
+        'interval' => '',
+        'endDate' => '',
+        'dontExpire' => false
     );
 
     if ($interval === INT_MONTHLY) {
@@ -240,8 +136,8 @@ function getRecurringInfo($interval, $recurringCycles)
         $date->modify("+$recurringCycles month");
         $date = $date->format('Y-m-d');
 
-        $recurringItem['duration'] = $date;
-        $recurringItem['period'] = "MONTHLY";
+        $recurringItem['endDate'] = $date;
+        $recurringItem['interval'] = "MONTHLY";
 
     } else if ($interval === INT_QUARTERLY) {
 
@@ -250,8 +146,8 @@ function getRecurringInfo($interval, $recurringCycles)
         $date->modify("+$_cycles month");
         $date = $date->format('Y-m-d');
 
-        $recurringItem['duration'] = $date;
-        $recurringItem['period'] = "QUARTERLY";
+        $recurringItem['endDate'] = $date;
+        $recurringItem['interval'] = "QUARTERLY";
 
     } else if ($interval === INT_BIANNUALLY) {
 
@@ -260,8 +156,8 @@ function getRecurringInfo($interval, $recurringCycles)
         $date->modify("+$_cycles month");
         $date = $date->format('Y-m-d');
 
-        $recurringItem['duration'] = $date;
-        $recurringItem['period'] = "BIANNUAL";
+        $recurringItem['endDate'] = $date;
+        $recurringItem['interval'] = "BIANNUAL";
 
     } else if ($interval === INT_ANNUALLY) {
 
@@ -270,8 +166,8 @@ function getRecurringInfo($interval, $recurringCycles)
         $date->modify("+$_cycles month");
         $date = $date->format('Y-m-d');
 
-        $recurringItem['duration'] = $date;
-        $recurringItem['period'] = "YEARLY";
+        $recurringItem['endDate'] = $date;
+        $recurringItem['interval'] = "YEARLY";
 
     } else if ($interval === INT_BIENNIALLY) {
 
@@ -280,8 +176,8 @@ function getRecurringInfo($interval, $recurringCycles)
         $date->modify("+$_cycles month");
         $date = $date->format('Y-m-d');
 
-        $recurringItem['duration'] = $date;
-        $recurringItem['period'] = "BIENNIALLY";
+        $recurringItem['endDate'] = $date;
+        $recurringItem['interval'] = "BIENNIALLY";
 
     } else if ($interval === INT_TRIENNIALLY) {
 
@@ -290,44 +186,30 @@ function getRecurringInfo($interval, $recurringCycles)
         $date->modify("+$_cycles month");
         $date = $date->format('Y-m-d');
 
-        $recurringItem['duration'] = $date;
-        $recurringItem['period'] = "TRIENNIALLY";
+        $recurringItem['endDate'] = $date;
+        $recurringItem['interval'] = "TRIENNIALLY";
 
-    } elseif (($interval == INT_ONETIME) || ($recurringCycles === "ONETIME")) { // TODO fix recurringClcles type issue
-        // Do nothing
     }
 
     if ($recurringCycles == 0) {
-        $recurringItem['duration'] = date("Y-m-d", strtotime("3000-1-1")); // Forever
-        $recurringItem['recurring_forever'] = true;
+        $recurringItem['endDate'] = date("Y-m-d", strtotime("3000-1-1")); // Forever
+        $recurringItem['dontExpire'] = true;
     }
 
     return $recurringItem;
 }
 
-/**
- * Returns a DirectPayPaymentItem by itemId
- *
- * @param integer $itemId
- * @return DirectPayPaymentItem
- * @throws Exception
- * getConsumableProductsForTblInvoiceItemId
- */
 function getItemByInvoiceId($itemId)
 {
     $invoiceItem = Capsule::table('tblinvoiceitems')->where('id', '=', $itemId)->first();
 
     $paymentItem = new DirectPayPaymentItem();
 
-    // Basic values needed to select the
-    // information relevant to this product
     $invoiceItemRelId = $invoiceItem->relid;
     $invoiceItemType = strtolower($invoiceItem->type);
 
-    // Initialize consumable product with information
-    // common to all types of invoice items
-    $paymentItem->unitPrice = (double)$invoiceItem->amount;
-    $paymentItem->invoiceItemId = $itemId;
+    $paymentItem->_amount = (double)$invoiceItem->amount;
+    $paymentItem->_invoiceId = $itemId;
 
     if ($invoiceItemType == "hosting") {
 
@@ -347,10 +229,10 @@ function getItemByInvoiceId($itemId)
 
             $recurringItem = getRecurringInfo($interval, $recurringCycles);
 
-            $paymentItem->isRecurring = true;
-            $paymentItem->isRecurringForever = $recurringItem['recurring_forever'];
-            $paymentItem->recurringPeriod = $recurringItem['period']; // Interval
-            $paymentItem->recurringDuration = $recurringItem['duration']; // End Date
+            $paymentItem->_isRecurring = true;
+            $paymentItem->_dontExpire = $recurringItem['dontExpire'];
+            $paymentItem->_interval = $recurringItem['interval']; // Interval
+            $paymentItem->_endDate = $recurringItem['endDate']; // End Date
         }
 
     } else if ($invoiceItemType == "domainregister" || $invoiceItemType == "domaintransfer" || $invoiceItemType == "domainrenew") {
@@ -362,7 +244,7 @@ function getItemByInvoiceId($itemId)
 
         $registrationPeriod = (int)$domainItem->registrationperiod;
 
-        $unitPrice = $paymentItem->unitPrice;
+        $unitPrice = $paymentItem->_amount;
         $firstPaymentAmount = $domainItem->firstpaymentamount;
         $recurringAmount = $domainItem->recurringamount;
         $interval = "";
@@ -374,23 +256,23 @@ function getItemByInvoiceId($itemId)
         } else if ($registrationPeriod == 3) {
             $interval = INT_TRIENNIALLY;
         } else {
-            $paymentItem->isRecurringButErrornous = true;
+            $paymentItem->_ambiguous = true;
         }
 
         if ($interval != "") {
             $recurringItem = getRecurringInfo($interval, 0);
 
-            $paymentItem->isRecurring = true;
-            $paymentItem->isRecurringForever = true;
-            $paymentItem->recurringPeriod = $recurringItem['period'];
-            $paymentItem->recurringDuration = $recurringItem['duration'];
+            $paymentItem->_isRecurring = true;
+            $paymentItem->_dontExpire = true;
+            $paymentItem->_interval = $recurringItem['interval'];
+            $paymentItem->_endDate = $recurringItem['endDate'];
 
             if ($unitPrice != $firstPaymentAmount) {
-                $paymentItem->recurringStartupFee = $unitPrice - $recurringAmount;
-                $paymentItem->unitPrice = $recurringAmount;
+                $paymentItem->_paymentFee = $unitPrice - $recurringAmount;
+                $paymentItem->_amount = $recurringAmount;
             } else {
-                $paymentItem->recurringStartupFee = $firstPaymentAmount - $recurringAmount;
-                $paymentItem->unitPrice = $recurringAmount;
+                $paymentItem->_paymentFee = $firstPaymentAmount - $recurringAmount;
+                $paymentItem->_amount = $recurringAmount;
             }
         }
 
@@ -407,12 +289,12 @@ function getItemByInvoiceId($itemId)
 
             $recurringItem = getRecurringInfo($interval, 0);
 
-            $paymentItem->isRecurring = true;
-            $paymentItem->isRecurringForever = $recurringItem['recurring_forever'];
-            $paymentItem->recurringPeriod = $recurringItem['period'];
-            $paymentItem->recurringDuration = $recurringItem['duration'];
-            $paymentItem->recurringStartupFee = $addonItem->setupfee;
-            $paymentItem->unitPrice = $addonItem->recurring;
+            $paymentItem->_isRecurring = true;
+            $paymentItem->_dontExpire = $recurringItem['dontExpire'];
+            $paymentItem->_interval = $recurringItem['interval'];
+            $paymentItem->_endDate = $recurringItem['endDate'];
+            $paymentItem->_paymentFee = $addonItem->setupfee;
+            $paymentItem->_amount = $addonItem->recurring;
         }
     } else if ($invoiceItemType == "item") { // Billable items
 
@@ -426,25 +308,13 @@ function getItemByInvoiceId($itemId)
             // Recur every $billing_cycle_number $billing_cycle_ordinal for $billing_duration times
             // Ex:   every 3                     Weeks                  for 5                 times
 
-            /**
-             * The magnitude of the billing cycle. E.g: 2.
-             * @var int
-             */
+
             $itemRecur = $item->recur;
-            /**
-             * The type of the billing cycle E.g: Weeks.
-             * Possible values include 0, days, weeks, months, years
-             * @var string
-             */
             $itemRecurCycle = strtoupper($item->recurcycle);
-            /**
-             * The duration of the recurrence. E.g: 2.
-             * @var int
-             */
             $itemRecurFor = $item->recurfor;
 
             if ($itemRecurCycle != 'WEEKS' && $itemRecurCycle != 'DAYS') {
-                $paymentItem->isRecurring = true;
+                $paymentItem->_isRecurring = true;
                 $interval = "";
 
                 if ($itemRecurCycle == 'YEARS') {
@@ -467,12 +337,12 @@ function getItemByInvoiceId($itemId)
 
                 if ($interval != "") {
                     $recurringItem = getRecurringInfo($interval, $itemRecurFor);
-                    $paymentItem->isRecurring = true;
-                    $paymentItem->isRecurringForever = false;
-                    $paymentItem->recurringPeriod = $recurringItem['period'];
-                    $paymentItem->recurringDuration = $recurringItem['duration'];
+                    $paymentItem->_isRecurring = true;
+                    $paymentItem->_dontExpire = false;
+                    $paymentItem->_interval = $recurringItem['interval'];
+                    $paymentItem->_endDate = $recurringItem['endDate'];
                 } else {
-                    $paymentItem->isRecurringButErrornous = true;
+                    $paymentItem->_ambiguous = true;
                 }
             }
         }
@@ -480,39 +350,34 @@ function getItemByInvoiceId($itemId)
         $mainProduct = getRecurringItem($invoiceItemRelId);
 
         $taxAmt = getTaxByInvoice($invoiceItemRelId);
-        $paymentItem->unitPrice = $paymentItem->unitPrice + $taxAmt;
+        $paymentItem->_amount = $paymentItem->_amount + $taxAmt;
 
         if ($mainProduct != null) {
-            /**
-             * The startup and recurrence total for the given invoiceid
-             * @var PriceData
-             */
+
             $invRes = getPriceDetails($invoiceItemRelId, $mainProduct);
 
             if (!$invRes) {
                 throw new Exception("Invoice result is null");
             }
 
-            $paymentItem->isRecurring = true;
-            $paymentItem->isRecurringForever = $mainProduct->isRecurringForever;
-            $paymentItem->recurringPeriod = $mainProduct->recurringPeriod;
-            $paymentItem->recurringDuration = $mainProduct->recurringDuration;
-            $paymentItem->recurringStartupFee = $invRes->startupTotal;
-            $paymentItem->unitPrice = $invRes->recurringTotal;
-            $paymentItem->recurringStartupFee = $paymentItem->recurringStartupFee + $taxAmt;
+            $paymentItem->_isRecurring = true;
+            $paymentItem->_dontExpire = $mainProduct->_dontExpire;
+            $paymentItem->_interval = $mainProduct->_interval;
+            $paymentItem->_endDate = $mainProduct->_endDate;
+            $paymentItem->_paymentFee = $invRes->_startupTotal;
+            $paymentItem->_amount = $invRes->_recurringTotal;
+            $paymentItem->_paymentFee = $paymentItem->_paymentFee + $taxAmt;
         }
     } else if ($invoiceItemType == "promohosting") {
-        // The Product the promotion is associated with
         $hostingItem = Capsule::table('tblhosting')->where('id', '=', $invoiceItemRelId)->first();
 
         if (!$hostingItem) {
             throw new Exception("Hosting details could not be found while looking up Promotion");
         }
 
-        // Promotion details
         $promotion = Capsule::table('tblpromotions')->where('id', '=', $hostingItem->promoid)->first();
 
-        if ($promotion->recurring == 1) { /* recurring promotion */
+        if ($promotion->recurring == 1) {
 
             $interval = strtoupper($hostingItem->billingcycle);
 
@@ -522,10 +387,10 @@ function getItemByInvoiceId($itemId)
                 $recurringCycles = $product->recurringcycles;
                 $recurringItem = getRecurringInfo($interval, $recurringCycles);
 
-                $paymentItem->isRecurring = true;
-                $paymentItem->isRecurringForever = $promotion->recurfor == 0;
-                $paymentItem->recurringPeriod = $recurringItem['period'];
-                $paymentItem->recurringDuration = $recurringItem['duration'];
+                $paymentItem->_isRecurring = true;
+                $paymentItem->_dontExpire = $promotion->recurfor == 0;
+                $paymentItem->_interval = $recurringItem['interval'];
+                $paymentItem->_endDate = $recurringItem['endDate'];
             }
         }
     } else if ($invoiceItemType == "promodomain") {
@@ -539,35 +404,27 @@ function getItemByInvoiceId($itemId)
 
         if ($promotion->recurring) {
             if ($domainItem->registrationperiod < 4) {
-                $paymentItem->isRecurring = true;
-                $paymentItem->recurringPeriod = "YEARLY";
+                $paymentItem->_isRecurring = true;
+                $paymentItem->_interval = "YEARLY";
 
                 $_cycles = $domainItem->registrationperiod * 12;
                 $date = new DateTime('now');
                 $date->modify("+$_cycles month");
                 $date = $date->format('Y-m-d');
 
-                $paymentItem->recurringDuration = $date;
+                $paymentItem->_endDate = $date;
             } else {
-                $paymentItem->isRecurring = true;
-                $paymentItem->isRecurringButErrornous = true;
+                $paymentItem->_isRecurring = true;
+                $paymentItem->_ambiguous = true;
             }
         }
     } elseif (!($invoiceItemType == "" && $invoiceItemRelId == 0) || $invoiceItemType != "setup") {
-        $paymentItem->isUnknownProductType = true;
+        $paymentItem->_typeUnknown = true;
     }
 
     return $paymentItem;
 }
 
-
-/**
- * Returns the recurring product/service by invoice.
- *
- * @param string $id
- * @return DirectPayPaymentItem
- * @throws Exception
- */
 function getRecurringItem($id)
 {
     $recurringItem = null;
@@ -582,7 +439,7 @@ function getRecurringItem($id)
                 $itemId = $item->id;
                 $paymentItem = getItemByInvoiceId($itemId);
 
-                if ($paymentItem->isRecurring) {
+                if ($paymentItem->_isRecurring) {
                     $recurringItem = $paymentItem;
                     break;
                 } else {
@@ -591,7 +448,7 @@ function getRecurringItem($id)
             }
         }
     } catch (Exception $exception) {
-        do_log('getRecurringItem - EXCEPTION: ' . json_encode($exception));
+        printToLog('getRecurringItem - EXCEPTION: ' . json_encode($exception));
     }
 
     return $recurringItem;

@@ -76,7 +76,7 @@ function directpay_link($params)
     // System Parameters
     $companyName = $params['companyname'];
     $systemUrl = $params['systemurl'];
-    $returnUrl = $params['returnurl']; // http://localhost/whmcs/viewinvoice.php?id=4
+    $returnUrl = $params['returnurl'];
     $langPayNow = $params['langpaynow'];
     $moduleDisplayName = $params['name'];
     $moduleName = $params['paymentmethod'];
@@ -87,7 +87,7 @@ function directpay_link($params)
 //    $responseUrl = $systemUrl . 'modules/gateways/callback/' . $moduleName . '.php?invoice=' . $invoiceId;
     $responseUrl = 'https://' . $_SERVER['HTTP_HOST'] . '/modules/gateways/callback/' . $moduleName . '.php?invoice=' . $invoiceId;
 
-    do_log($responseUrl);
+    printToLog($responseUrl);
 
     // API Connection Details
     $gatewayUrl = "https://test-gateway.directpay.lk/api/v3/create-session";
@@ -117,14 +117,12 @@ function directpay_link($params)
             "email" => $email,
             "phone" => $phone,
             "start_date" => date("Y-m-d"),
-            "end_date" => $mainProductOfRecurring->recurringDuration,
+            "end_date" => $mainProductOfRecurring->_endDate,
             "do_initial_payment" => true,
-            "initial_amount" => $priceResult->startupTotal,
-            "interval" => convertInterval($mainProductOfRecurring->recurringPeriod),
+            "initial_amount" => $priceResult->_startupTotal,
+            "interval" => convertInterval($mainProductOfRecurring->_interval),
             "description" => $description,
         ];
-        do_log('requestData ' . json_encode($requestData));
-        do_log('got recurring');
     } else {
         $requestData = [
             "merchant_id" => $merchantId,
@@ -167,7 +165,7 @@ function directpay_link($params)
 
     $response = curl_exec($ch);
     if (curl_error($ch)) {
-        do_log('Unable to connect: ' . curl_errno($ch) . ' - ' . curl_error($ch));
+        printToLog('Unable to connect: ' . curl_errno($ch) . ' - ' . curl_error($ch));
     }
     curl_close($ch);
 
@@ -181,9 +179,9 @@ function directpay_link($params)
     }
 
     // Redirect to Payment Gateway
-    return '<form method="GET" action="' . $paymentRedirect . '">
-                <img src="https://cdn.directpay.lk/live/gateway/dp_visa_master_logo.png" alt="DirectPay Payment" width="20%" min-width="200px" />
-            </form>';
+//    return '<form method="GET" action="' . $paymentRedirect . '">
+//                <img src="https://cdn.directpay.lk/live/gateway/dp_visa_master_logo.png" alt="DirectPay Payment" width="20%" min-width="200px" />
+//            </form>';
 
 }
 
