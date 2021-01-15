@@ -300,6 +300,9 @@ function getRecurringInfo($interval, $recurringCycles)
         do_log('Unknown interval: "' . $interval . "\"");
     }
 
+
+    do_log("REcurringItem before - " . json_encode($recurringItem));
+
     if ($recurringCycles == 0) {
         $recurringItem['duration'] = ''; // Forever
         $recurringItem['recurring_forever'] = true;
