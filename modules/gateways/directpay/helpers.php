@@ -265,7 +265,7 @@ function getRecurringInfo($interval, $recurringCycles)
     do_log($recurringCycles);
     do_log("INT_MONTHLY " . INT_MONTHLY);
 
-    if ($interval == INT_ONETIME || $recurringCycles == "ONETIME") { // TODO fix recurringClcles type issue
+    if (($interval == INT_ONETIME) || ($recurringCycles == "ONETIME")) { // TODO fix recurringClcles type issue
         // Do nothing
         do_log("in do nothing");
     } else if ($interval == INT_MONTHLY) {
