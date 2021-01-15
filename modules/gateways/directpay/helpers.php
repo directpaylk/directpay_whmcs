@@ -224,14 +224,10 @@ function getPriceDetails($invoiceId, $mainProduct)
         if (!$paymentItem->isRecurringButErrornous && $paymentItem->isRecurring && !$paymentItem->isUnknownProductType) {
             // Is genuinely recurring
 
-            // Do the recurrence match?
-            $periodsMatch = $mainProduct->recurringPeriod == $paymentItem->recurringPeriod;
-            $durationsMatch = $mainProduct->recurringDuration == $paymentItem->recurringDuration;
-
-            if ($periodsMatch && $durationsMatch) {
+            if (($mainProduct->recurringPeriod == $paymentItem->recurringPeriod) && ($mainProduct->recurringDuration == $paymentItem->recurringDuration)) {
                 $startupFeeTotal += $paymentItem->recurringStartupFee;
                 $recurringTotal += $paymentItem->unitPrice;
-                do_log('Adding invoice item ' . $id . ' to cart as a recurring product ST = ' . $paymentItem->recurringStartupFee . ' REC = ' . $paymentItem->unitPrice);
+                do_log('Adding invoice item ' . $id . ' to cart as a recurring product startup fee = ' . $paymentItem->recurringStartupFee . ' unit price = ' . $paymentItem->unitPrice);
             } else {
                 do_log('Skipping invoice item ' . $id);
             }
@@ -242,7 +238,7 @@ function getPriceDetails($invoiceId, $mainProduct)
         } else {
             do_log('Unknown error with invoice item ' . $id . '');
         }
-        do_log('loop status ST = ' . $startupFeeTotal . ' REC = ' . $recurringTotal . ' ');
+        do_log('loop status startup fee total = ' . $startupFeeTotal . ' recurring total = ' . $recurringTotal . ' ');
     }
 
     return new PriceData($startupFeeTotal, $recurringTotal);
