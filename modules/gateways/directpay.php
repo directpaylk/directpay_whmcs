@@ -155,6 +155,8 @@ function directpay_link($params)
     $dataString = base64_encode(json_encode($requestData));
     $signature = 'hmac ' . hash_hmac('sha256', $dataString, $secret);
 
+    do_log("signature " . $signature);
+
     // Call API and get payment session URL
     $ch = curl_init();
 
@@ -178,6 +180,8 @@ function directpay_link($params)
         do_log('Unable to connect: ' . curl_errno($ch) . ' - ' . curl_error($ch));
     }
     curl_close($ch);
+
+    do_log("response " . $response);
 
     $getSession = json_decode($response);
 
