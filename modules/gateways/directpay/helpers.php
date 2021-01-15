@@ -264,36 +264,79 @@ function getRecurringInfo($interval, $recurringCycles)
         // Do nothing
     } else if ($interval === INT_MONTHLY) {
         do_log("INT_MONTHLY");
-        $recurringItem['period'] = '1 Month';
-        $recurringItem['duration'] = $recurringCycles . ' Month';
+        $recurringItem['period'] = "MONTHLY";
+
+        $date = new DateTime('now');
+        $date->modify("+$recurringCycles month");
+        $date = $date->format('Y-m-d');
+
+        $recurringItem['duration'] = $date;
 //        $recurringItem['recurring_word'] = 'Month';
     } else if ($interval === INT_QUARTERLY) {
         do_log("INT_QUARTERLY");
-        $recurringItem['period'] = '3 Month';
-        $recurringItem['duration'] = (3 * $recurringCycles) . ' Month';
+        $recurringItem['period'] = "QUARTERLY";
+
+        $_cycles = 3 * $recurringCycles;
+        $date = new DateTime('now');
+        $date->modify("+$_cycles month");
+        $date = $date->format('Y-m-d');
+
+        $recurringItem['duration'] = $date;
+
+
 //        $recurringItem['interval'] = 'Month';
 //        $recurringItem['recurring_modifier'] = 3;
     } else if ($interval === INT_BIANNUALLY) {
         do_log("INT_BIANNUALLY");
-        $recurringItem['period'] = '6 Month';
-        $recurringItem['duration'] = (6 * $recurringCycles) . ' Month';
+        $recurringItem['period'] = "BIANNUAL";
+
+        $_cycles = 6 * $recurringCycles;
+        $date = new DateTime('now');
+        $date->modify("+$_cycles month");
+        $date = $date->format('Y-m-d');
+
+        $recurringItem['duration'] = $date;
+
 //        $recurring_info['recurring_word'] = 'Month';
 //        $recurring_info['recurring_modifier'] = 6;
     } else if ($interval === INT_ANNUALLY) {
         do_log("INT_ANNUALLY");
-        $recurringItem['period'] = '1 Year';
-        $recurringItem['duration'] = $recurringCycles . ' Year';
+        $recurringItem['period'] = "YEARLY";
+
+        $_cycles = 12 * $recurringCycles;
+        $date = new DateTime('now');
+        $date->modify("+$_cycles month");
+        $date = $date->format('Y-m-d');
+
+        $recurringItem['duration'] = $date;
+
 //        $recurringItem['recurring_word'] = 'Year';
     } else if ($interval === INT_BIENNIALLY) {
         do_log("INT_BIENNIALLY");
-        $recurringItem['period'] = '2 Year';
-        $recurringItem['duration'] = (2 * $recurringCycles) . ' Year';
+        $recurringItem['period'] = "BIENNIALLY";
+
+        $_cycles = 24 * $recurringCycles;
+        $date = new DateTime('now');
+        $date->modify("+$_cycles month");
+        $date = $date->format('Y-m-d');
+
+        $recurringItem['duration'] = $date;
+
+
 //        $recurringItem['recurring_word'] = 'Year';
 //        $recurringItem['recurring_modifier'] = 2;
     } else if ($interval === INT_TRIENNIALLY) {
         do_log("INT_TRIENNIALLY");
-        $recurringItem['period'] = '3 Year';
-        $recurringItem['duration'] = (3 * $recurringCycles) . ' Year';
+        $recurringItem['period'] = "TRIENNIALLY";
+
+        $_cycles = 36 * $recurringCycles;
+        $date = new DateTime('now');
+        $date->modify("+$_cycles month");
+        $date = $date->format('Y-m-d');
+
+        $recurringItem['duration'] = $date;
+
+
 //        $recurringItem['recurring_word'] = 'Year';
 //        $recurringItem['recurring_modifier'] = 3;
     } else {
@@ -368,8 +411,8 @@ function getItemByInvoiceId($itemId)
 
             $paymentItem->isRecurring = true;
             $paymentItem->isRecurringForever = $recurringItem['recurring_forever'];
-            $paymentItem->recurringPeriod = $recurringItem['period'];
-            $paymentItem->recurringDuration = $recurringItem['duration'];
+            $paymentItem->recurringPeriod = $recurringItem['period']; // Interval
+            $paymentItem->recurringDuration = $recurringItem['duration']; // End Date
         }
 
         do_log(json_encode($paymentItem));
