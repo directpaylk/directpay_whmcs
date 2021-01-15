@@ -346,6 +346,8 @@ function getItemByInvoiceId($itemId)
 
         $interval = strtoupper($hostingItem->billingcycle);
 
+        do_log($interval);
+
         if ($interval != "ONE TIME") {
 
             $packageId = $hostingItem->packageid;
@@ -359,6 +361,9 @@ function getItemByInvoiceId($itemId)
             $paymentItem->recurringPeriod = $recurringItem['period'];
             $paymentItem->recurringDuration = $recurringItem['duration'];
         }
+
+        do_log(json_encode($paymentItem));
+
     } else if ($invoiceItemType == "domainregister" || $invoiceItemType == "domaintransfer" || $invoiceItemType == "domainrenew") {
         $domainItem = Capsule::table('tbldomains')->where('id', '=', $invoiceItemRelId)->first();
 
@@ -598,6 +603,7 @@ function getRecurringItem($id)
                 $paymentItem = getItemByInvoiceId($itemId);
 
                 if ($paymentItem->isRecurring) {
+                    do_log($paymentItem->isRecurring);
                     $recurringItem = $paymentItem;
                     break;
                 } else {
