@@ -205,7 +205,6 @@ function getTaxByInvoice($id)
  */
 function getPriceDetails($invoiceId, $mainProduct)
 {
-
     do_log('getStartupAndRecurrenceTotalForInvoiceWithFirstProduct invoked ');
 
     $startupFeeTotal = 0.0;
@@ -214,6 +213,9 @@ function getPriceDetails($invoiceId, $mainProduct)
     $invoiceItems = Capsule::table('tblinvoiceitems')->where('invoiceid', '=', $invoiceId)->get();
     foreach ($invoiceItems as $item) {
         $id = $item->id;
+
+        do_log("item->id " . $id);
+
         $paymentItem = getItemByInvoiceId($id);
 
         // Consider the product's properties
@@ -603,7 +605,6 @@ function getRecurringItem($id)
                 $paymentItem = getItemByInvoiceId($itemId);
 
                 if ($paymentItem->isRecurring) {
-                    do_log($paymentItem->isRecurring);
                     $recurringItem = $paymentItem;
                     break;
                 } else {

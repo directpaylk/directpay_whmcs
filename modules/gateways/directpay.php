@@ -111,6 +111,8 @@ function directpay_link($params)
 
         $priceResult = getPriceDetails($invoiceId, $mainProductOfRecurring);
 
+        do_log("priceResult " . $priceResult);
+
         $requestData = [
             "merchant_id" => $merchantId,
             "amount" => $amount ? (string)$amount : "0.00",
