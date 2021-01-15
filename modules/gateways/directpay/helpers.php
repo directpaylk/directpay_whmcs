@@ -295,9 +295,11 @@ function getRecurringInfo($interval, $recurringCycles)
     }
 
     if ($recurringCycles == 0) {
-        $recurringItem['duration'] = 'Forever';
+        $recurringItem['duration'] = ''; // Forever
         $recurringItem['recurring_forever'] = true;
     }
+
+    do_log("REcurringItem " . json_encode($recurringItem));
 
     return $recurringItem;
 }
