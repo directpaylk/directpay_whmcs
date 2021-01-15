@@ -60,7 +60,6 @@ function directpay_link($params)
     $secret = $params['secret'];
     $merchantId = $params['merchantId'];
     $testMode = $params['sandBox'];
-    $apiKey = $params['apiKey'];
 
     // Invoice Parameters
     $invoiceId = $params['invoiceid'];
@@ -129,6 +128,7 @@ function directpay_link($params)
             "do_initial_payment" => true,
             "initial_amount" => $priceResult->startupTotal,
             "interval" => convertInterval($mainProductOfRecurring->recurringPeriod),
+            "description" => $description,
         ];
         do_log('requestData ' . json_encode($requestData));
         do_log('got recurring');
@@ -146,7 +146,8 @@ function directpay_link($params)
             "last_name" => $lastName,
             "email" => $email,
             "phone" => $phone,
-            "logo" => ''
+            "logo" => '',
+            "description" => $description,
         ];
     }
 

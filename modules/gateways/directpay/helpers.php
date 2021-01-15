@@ -36,17 +36,15 @@ class DirectPayPaymentItem
     public $isRecurringForever = false;
 
     /**
-     * The recurring period. In PayHere terms,
-     * the ```recurrence```.
-     * E.g: 2 Week
+     * The recurring period
+     * interval
      * @var string
      */
     public $recurringPeriod = "";
 
     /**
-     * The recurring duration. In PayHere terms,
-     * the ```duration```.
-     * E.g: 2 Week
+     * The recurring duration
+     * payment end date
      * @var string
      */
     public $recurringDuration = "";
@@ -74,7 +72,7 @@ class DirectPayPaymentItem
     /**
      * If this value is true, it signifies that an
      * internal parameter for this product caused
-     * it to be incompatible with the PayHere supported
+     * it to be incompatible with the DirectPay supported
      * recurring constraints.
      *
      * Such products should not be taken into account
@@ -86,7 +84,7 @@ class DirectPayPaymentItem
 
     /**
      * Indicates that this product could not be
-     * used to construct the ```PayhereConsumableProduct```
+     * used to construct the ```DirectPayPaymentItem```
      * correctly, since the detail extractor cannot
      * identifier it's product type
      *
@@ -153,9 +151,9 @@ class PriceData
 
 function do_log($message)
 {
-    if (false) {
+//    if (true) {
         echo "<div><p style='padding: 2px 4px 2px 3px; margin: 3px 3px 1px 3px; display: inline-block; background-color: #9bffd9; border: 1px solid #00a063; border-radius: 5px;'>" . $message . '</p></div>';
-    }
+//    }
 
 }
 
