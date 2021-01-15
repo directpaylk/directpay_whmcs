@@ -21,20 +21,7 @@ class DirectPayPaymentItem
     public $_endDate = "";
     public $_paymentFee = 0.0;
     public $_amount = 0.0;
-
-    /**
-     * If this value is true, it signifies that an
-     * internal parameter for this product caused
-     * it to be incompatible with the DirectPay supported
-     * recurring constraints.
-     *
-     * Such products should not be taken into account
-     * for startup fees or recurrence amounts.
-     *
-     * @var boolean
-     */
     public $_ambiguous = false;
-
     public $_typeUnknown = false;
 
     function getPrice()
@@ -62,7 +49,7 @@ class PriceData
 
 function printToLog($message)
 {
-    if (true) {
+    if (false) {
         echo "
             <div>
                 <p
@@ -111,11 +98,9 @@ function getPriceDetails($invoiceId, $mainProduct)
             if (($mainProduct->_interval == $paymentItem->_interval) && ($mainProduct->_endDate == $paymentItem->_endDate)) {
                 $startupFeeTotal += $paymentItem->_paymentFee;
                 $recurringTotal += $paymentItem->_amount;
-                printToLog('Invoice item ' . $id . ' | Recurring | startup fee: ' . $paymentItem->_paymentFee . ' | price: ' . $paymentItem->_amount);
             }
         } else if (!$paymentItem->_typeUnknown && !$paymentItem->_isRecurring) {
             $startupFeeTotal += $paymentItem->_amount;
-            printToLog('Invoice item ' . $id . ' | Item is not recurring: ' . $paymentItem->_amount);
         }
     }
 
@@ -231,8 +216,8 @@ function getItemByInvoiceId($itemId)
 
             $paymentItem->_isRecurring = true;
             $paymentItem->_dontExpire = $recurringItem['dontExpire'];
-            $paymentItem->_interval = $recurringItem['interval']; // Interval
-            $paymentItem->_endDate = $recurringItem['endDate']; // End Date
+            $paymentItem->_interval = $recurringItem['interval'];
+            $paymentItem->_endDate = $recurringItem['endDate'];
         }
 
     } else if ($invoiceItemType == "domainregister" || $invoiceItemType == "domaintransfer" || $invoiceItemType == "domainrenew") {
@@ -296,7 +281,7 @@ function getItemByInvoiceId($itemId)
             $paymentItem->_paymentFee = $addonItem->setupfee;
             $paymentItem->_amount = $addonItem->recurring;
         }
-    } else if ($invoiceItemType == "item") { // Billable items
+    } else if ($invoiceItemType == "item") {
 
         $item = Capsule::table('tblbillableitems')->where('id', '=', $invoiceItemRelId)->first();
 
@@ -304,10 +289,7 @@ function getItemByInvoiceId($itemId)
             throw new Exception("Billable Item not found");
         }
 
-        if ($item->invoiceaction == 4) { // is Recurring
-            // Recur every $billing_cycle_number $billing_cycle_ordinal for $billing_duration times
-            // Ex:   every 3                     Weeks                  for 5                 times
-
+        if ($item->invoiceaction == 4) {
 
             $itemRecur = $item->recur;
             $itemRecurCycle = strtoupper($item->recurcycle);

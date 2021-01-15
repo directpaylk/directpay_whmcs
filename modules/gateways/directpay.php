@@ -165,7 +165,7 @@ function directpay_link($params)
 
     $response = curl_exec($ch);
     if (curl_error($ch)) {
-        printToLog('Unable to connect: ' . curl_errno($ch) . ' - ' . curl_error($ch));
+        printToLog('Unable to fetch payment link: ' . curl_errno($ch) . ' - ' . curl_error($ch));
     }
     curl_close($ch);
 
@@ -179,9 +179,9 @@ function directpay_link($params)
     }
 
     // Redirect to Payment Gateway
-//    return '<form method="GET" action="' . $paymentRedirect . '">
-//                <img src="https://cdn.directpay.lk/live/gateway/dp_visa_master_logo.png" alt="DirectPay Payment" width="20%" min-width="200px" />
-//            </form>';
+    return '<form method="GET" action="' . $paymentRedirect . '">
+                <img src="https://cdn.directpay.lk/live/gateway/dp_visa_master_logo.png" alt="DirectPay_payment" width="20%" min-width="200px" />
+            </form>';
 
 }
 
