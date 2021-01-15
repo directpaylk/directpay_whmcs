@@ -104,6 +104,7 @@ function directpay_link($params)
     }
 
     $mainProductOfRecurring = getRecurringItem($invoiceId);
+    do_log("mainProductOfRecurring " . json_encode($mainProductOfRecurring));
 
     // Set post values
     if ($mainProductOfRecurring != null) {
@@ -133,6 +134,7 @@ function directpay_link($params)
             "initial_amount" => $priceResult->startupTotal,
             "interval" => $mainProductOfRecurring->recurringPeriod,
         ];
+        do_log('requestData ' . json_encode($requestData));
         do_log('got recurring');
     } else {
         $requestData = [
