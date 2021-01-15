@@ -32,13 +32,6 @@ function directpay_config()
             'Default' => '',
             'Description' => 'Your Merchant ID from DirectPay',
         ),
-        'apiKey' => array(
-            'FriendlyName' => 'API Key',
-            'Type' => 'text',
-            'Size' => '255',
-            'Default' => '',
-            'Description' => 'API Key from DirectPay',
-        ),
         'secret' => array(
             'FriendlyName' => 'Secret Key',
             'Type' => 'text',
