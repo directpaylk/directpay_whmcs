@@ -181,6 +181,7 @@ function directpay_link($params)
     // Redirect to Payment Gateway
     return '<form id="directpay_payment_form" method="GET" action="' . $paymentRedirect . '">
                 <img src="https://cdn.directpay.lk/live/gateway/dp_visa_master_logo.png" alt="DirectPay_payment" width="20%" min-width="200px" onclick="document.getElementById(\'directpay_payment_form\').submit();" />
+                <input type="submit" value="' . $langPayNow . '">
             </form>';
 
 }
