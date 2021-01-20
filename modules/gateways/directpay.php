@@ -82,7 +82,7 @@ function directpay_link($params)
     $moduleName = $params['paymentmethod'];
     $whmcsVersion = $params['whmcsVersion'];
 
-    $orderId = 'WH' . substr($merchantId, 1) . $invoiceId;
+    $orderId = 'WH' . $invoiceId . 'D' . date("ymdhis");
 
 //    $responseUrl = $systemUrl . 'modules/gateways/callback/' . $moduleName . '.php?invoice=' . $invoiceId;
     $responseUrl = 'https://' . $_SERVER['HTTP_HOST'] . '/modules/gateways/callback/' . $moduleName . '.php?invoice=' . $invoiceId;
@@ -180,7 +180,8 @@ function directpay_link($params)
 
     // Redirect to Payment Gateway
     return '<form method="GET" action="' . $paymentRedirect . '">
-                <img src="https://cdn.directpay.lk/live/gateway/dp_visa_master_logo.png" alt="DirectPay_payment" width="20%" min-width="200px" />
+                <img src="https://cdn.directpay.lk/live/gateway/dp_visa_master_logo.png" alt="DirectPay_payment" width="20%" min-width="200px" onclick="document.getElementById(\'directpay_payment_form\').submit();" />
+                <input type="submit" value="' . $langPayNow . '">
             </form>';
 
 }
