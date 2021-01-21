@@ -90,10 +90,14 @@ function directpay_link($params)
     printToLog($responseUrl);
 
     // API Connection Details
-    $gatewayUrl = "https://test-gateway.directpay.lk/api/v3/create-session";
-    if ($testMode == 'off') {
+    if ($testMode == 'on') {
+        $gatewayUrl = "https://test-gateway.directpay.lk/api/v3/create-session";
+    } else {
         $gatewayUrl = "https://gateway.directpay.lk/api/v3/create-session";
     }
+
+    printToLog("Test Mode: " . ($testMode ? "yes" : "no"));
+    printToLog($gatewayUrl);
 
     $mainProductOfRecurring = getRecurringItem($invoiceId);
 
