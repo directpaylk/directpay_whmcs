@@ -20,6 +20,8 @@ function directpay_MetaData()
 
 function directpay_config()
 {
+    $responseUrl = 'https://' . $_SERVER['HTTP_HOST'] . '/modules/gateways/callback/directpay.php';
+
     return array(
         'FriendlyName' => array(
             'Type' => 'System',
@@ -39,6 +41,13 @@ function directpay_config()
             'Default' => '',
             'Description' => 'Secret Key string from DirectPay',
         ),
+        'notifyUrl' => array(
+            'FriendlyName' => 'Notify URL',
+            'Type' => 'text',
+            'Size' => '191',
+            'Default' => $responseUrl,
+            'Description' => 'Notification endpoint URL.<br><small>Default Endpoint - </small> <p style="color: grey;">' . $responseUrl . '</p>',
+        ),
         'sandBox' => array(
             'FriendlyName' => 'SandBox Mode',
             'Type' => 'yesno',
@@ -53,6 +62,7 @@ function directpay_link($params)
     $secret = $params['secret'];
     $merchantId = $params['merchantId'];
     $testMode = $params['sandBox'];
+    $notifyUrl = $params['notifyUrl'];
 
     // Invoice Parameters
     $invoiceId = $params['invoiceid'];
@@ -85,7 +95,8 @@ function directpay_link($params)
     $orderId = 'WH' . $invoiceId . 'D' . date("ymdhis");
 
 //    $responseUrl = $systemUrl . 'modules/gateways/callback/' . $moduleName . '.php?invoice=' . $invoiceId;
-    $responseUrl = 'https://' . $_SERVER['HTTP_HOST'] . '/modules/gateways/callback/' . $moduleName . '.php?invoice=' . $invoiceId;
+//    $responseUrl = 'https://' . $_SERVER['HTTP_HOST'] . '/modules/gateways/callback/' . $moduleName . '.php?invoice=' . $invoiceId;
+    $responseUrl = $notifyUrl . '?invoice=' . $invoiceId;
 
     printToLog($responseUrl);
 
