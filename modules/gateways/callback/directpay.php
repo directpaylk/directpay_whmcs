@@ -53,9 +53,11 @@ if (count($authHeaders) == 2) {
         $success = true;
     } else {
         $responseValidation = ' - Signature Verification Failed';
+        echo "Signature Verification Failed.";
     }
 } else {
     $responseValidation = ' - Invalid Signature';
+    echo "Invalid Signature.";
 }
 
 /**
@@ -120,6 +122,8 @@ if ($success) {
             0.00,
             $gatewayModuleName
         );
+
+        echo "Invoice added successfully. InvoiceId: $invoiceId";
     }
 }
 
