@@ -164,7 +164,6 @@ function directpay_link($params)
         $priceResult = getPriceDetails($invoiceId, $mainProductOfRecurring);
 
         // TODO: Recurring product
-        printToLog("recurring");
 
 //        $requestData = [
 //            "merchant_id" => $merchantId,
