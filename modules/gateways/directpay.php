@@ -143,7 +143,6 @@ function directpay_link($params)
 
     $redirectFormData = array();
     $redirectFormData["_mId"] = $merchantId;
-    $redirectFormData["_amount"] = $amount;
     $redirectFormData["_firstName"] = $firstName;
     $redirectFormData["_lastName"] = $lastName;
     $redirectFormData["_email"] = $email;
@@ -199,6 +198,8 @@ function directpay_link($params)
         $redirectFormData["_endDate"] = $endDate;
         $redirectFormData["_interval"] = $interval;
         $redirectFormData["_doFirstPayment"] = "1";
+        $redirectFormData["_recurringAmount"] = $amount;
+        $redirectFormData["_amount"] = $priceResult->_startupTotal;
 
     } else {
 
@@ -206,6 +207,7 @@ function directpay_link($params)
             $reference . $firstName . $lastName . $email . $description . $apiKey . $responseUrl;
 
         $redirectFormData["_type"] = "ONE_TIME";
+        $redirectFormData["_amount"] = $amount;
 
     }
 
