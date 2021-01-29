@@ -85,14 +85,16 @@ $pubKeyid = openssl_get_publickey($keyfile);
 $signatureVerify = openssl_verify($dataString, base64_decode($signature), $pubKeyid, OPENSSL_ALGO_SHA256);
 
 if ($signatureVerify == 1) {
-    echo("Signature valid"."\n");
-    logActivity("verified");
+    $success = true;
+    echo("Signature Verified.");
 } elseif ($signatureVerify == 0) {
-    logActivity("not verified");
-    echo("Signature invalid 1"."\n");
+    logActivity("Signature Verification Failed.");
+    $responseValidation = ' - Signature Verification Failed';
+    echo "Signature Verification Failed.";
 } else {
-    logActivity("not verified 2");
-    echo("Signature invalid 2"."\n");
+    logActivity("Invalid Signature.");
+    $responseValidation = ' - Invalid Signature';
+    echo "Invalid Signature.";
 }
 
 /**
