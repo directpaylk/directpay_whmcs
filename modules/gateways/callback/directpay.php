@@ -53,7 +53,6 @@ if (count($authHeaders) == 2) {
         $success = true;
     } else {
         $responseValidation = ' - Signature Verification Failed';
-        print_r($_SERVER);
         echo "Signature Verification Failed.";
     }
 } else {
