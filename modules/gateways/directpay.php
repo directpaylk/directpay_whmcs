@@ -92,7 +92,7 @@ function directpay_link($params)
     $moduleName = $params['paymentmethod'];
     $whmcsVersion = $params['whmcsVersion'];
 
-    $orderId = 'WH' . $invoiceId . 'D' . date("ymdhis");
+    $orderId = 'WH' . $invoiceId . date("ymdHis");
 
 //    $responseUrl = $systemUrl . 'modules/gateways/callback/' . $moduleName . '.php?invoice=' . $invoiceId;
 //    $responseUrl = 'https://' . $_SERVER['HTTP_HOST'] . '/modules/gateways/callback/' . $moduleName . '.php?invoice=' . $invoiceId;
