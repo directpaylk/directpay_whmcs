@@ -188,8 +188,9 @@ function directpay_link($params)
 
         $endDate = $mainProductOfRecurring->_endDate;
         $interval = convertInterval($mainProductOfRecurring->_interval);
+        $initialAmount = $priceResult->_startupTotal;
 
-        $dataString = $merchantId . $amount . $currencyCode . $pluginName . $pluginVersion . $returnUrl . $cancelUrl . $orderId .
+        $dataString = $merchantId . $initialAmount . $currencyCode . $pluginName . $pluginVersion . $returnUrl . $cancelUrl . $orderId .
             $reference . $firstName . $lastName . $email . $description . $apiKey . $responseUrl . date("Y-m-d") . $endDate .
             $interval . "1";
 
@@ -199,7 +200,7 @@ function directpay_link($params)
         $redirectFormData["_interval"] = $interval;
         $redirectFormData["_doFirstPayment"] = "1";
         $redirectFormData["_recurringAmount"] = $amount;
-        $redirectFormData["_amount"] = $priceResult->_startupTotal;
+        $redirectFormData["_amount"] = $initialAmount;
 
     } else {
 
