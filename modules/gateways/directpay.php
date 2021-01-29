@@ -122,7 +122,7 @@ function directpay_link($params)
 
 //    $responseUrl = $systemUrl . 'modules/gateways/callback/' . $moduleName . '.php?invoice=' . $invoiceId;
 //    $responseUrl = 'https://' . $_SERVER['HTTP_HOST'] . '/modules/gateways/callback/' . $moduleName . '.php?invoice=' . $invoiceId;
-    $responseUrl = $notifyUrl . '?invoice=' . $invoiceId;
+    $responseUrl = $notifyUrl . '?invoice=' . $invoiceId . '&amount=' . $amount;
 
     printToLog($responseUrl);
 
