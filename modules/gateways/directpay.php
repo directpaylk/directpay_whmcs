@@ -113,8 +113,8 @@ function directpay_link($params)
 
     $cancelUrl = $returnUrl;
 
-    $pluginName = "WHMCS_";
-    $pluginVersion = "v1.0";
+    $pluginName = "WHMCS";
+    $pluginVersion = "_v1.0";
 
     $orderId = 'WH' . $invoiceId . date("ymdHis");
 
@@ -127,11 +127,6 @@ function directpay_link($params)
     printToLog($responseUrl);
 
     // API Connection Details
-//    if ($testMode == 'on') {
-//        $gatewayUrl = "https://test-gateway.directpay.lk/api/v3/create-session";
-//    } else {
-//        $gatewayUrl = "https://gateway.directpay.lk/api/v3/create-session";
-//    }
     if ($testMode == 'on') {
         $gatewayUrl = "https://testpay.directpay.lk/";
     } else {
@@ -141,7 +136,27 @@ function directpay_link($params)
     printToLog("Test Mode: " . ($testMode ? "yes" : "no"));
     printToLog($gatewayUrl);
 
+    $redirectForm = '';
+    $signature = '';
+
     $mainProductOfRecurring = getRecurringItem($invoiceId);
+
+    $redirectFormData = array();
+    $redirectFormData["_mId"] = $merchantId;
+    $redirectFormData["_amount"] = $amount;
+    $redirectFormData["_firstName"] = $firstName;
+    $redirectFormData["_lastName"] = $lastName;
+    $redirectFormData["_email"] = $email;
+    $redirectFormData["_reference"] = $reference;
+    $redirectFormData["_description"] = $description;
+    $redirectFormData["_returnUrl"] = $returnUrl;
+    $redirectFormData["_cancelUrl"] = $cancelUrl;
+    $redirectFormData["_responseUrl"] = $responseUrl;
+    $redirectFormData["_currency"] = $currencyCode;
+    $redirectFormData["_orderId"] = $orderId;
+    $redirectFormData["_pluginVersion"] = $pluginVersion;
+    $redirectFormData["_pluginName"] = $pluginName;
+    $redirectFormData["api_key"] = $apiKey;
 
     // Set post values
     if ($mainProductOfRecurring != null) {
@@ -179,140 +194,36 @@ function directpay_link($params)
         $dataString = $merchantId . $amount . $currencyCode . $pluginName . $pluginVersion . $returnUrl . $cancelUrl . $orderId .
             $reference . $firstName . $lastName . $email . $description . $apiKey . $responseUrl . date("Y-m-d") . $endDate .
             $interval . "1";
-        $pkeyid = openssl_get_privatekey($privateKey);
-        $signResult = openssl_sign($dataString, $signature, $pkeyid, OPENSSL_ALGO_SHA256);
-        $signatureEncoded = base64_encode($signature);
 
-        return '<form id="directpay_payment_form" method="POST" action="' . $gatewayUrl . '">
-<input type="hidden" name="_type" id="_type" value="RECURRING" />
-<input type="hidden" name="_mId" id="_mId" value="' . $merchantId . '" />
-<input type="text" name="_amount" id="_amount" value="' . $amount . '" />
-<input type="hidden" name="_firstName" id="_firstName" value="' . $firstName . '">
-<input type="hidden" name="_lastName" id="_lastName" value="' . $lastName . '">
-<input type="hidden" name="_email" id="_email" value="' . $email . '">
-<input type="hidden" name="_reference" id="_reference" value="' . $reference . '">
-<input type="hidden" name="_description" id="_description" value="' . $description . '">
-<input type="hidden" name="_returnUrl" id="_returnUrl" value="' . $returnUrl . '">
-<input type="hidden" name="_cancelUrl" id="_cancelUrl" value="' . $cancelUrl . '">
-<input type="hidden" name="_responseUrl" id="_responseUrl" value="' . $responseUrl . '">
-<input type="hidden" name="_currency" id="_currency" value="' . $currencyCode . '">
-   
-<input type="hidden" name="_orderId" id="_orderId" value="' . $orderId . '">
-<input type="hidden" name="_pluginVersion" id="_pluginVersion" value="' . $pluginVersion . '">
-<input type="hidden" name="_pluginName" id="_pluginName" value="' . $pluginName . '">
-<input type="hidden" name="api_key" id="api_key" value="' . $apiKey . '">
-<input type="hidden" name="signature" id="signature" value="' . $signatureEncoded . '">
-
-
-
-<input type="hidden" name="_startDate" id="_startDate" value="' . date("Y-m-d") . '">
-<input type="hidden" name="_endDate" id="_endDate" value="' . $endDate . '">
-<input type="hidden" name="_interval" id="_interval" value="' . $interval . '">
-<input type="hidden" name="_doFirstPayment" id="_doFirstPayment" value="1">
-    
-<img src="https://cdn.directpay.lk/live/gateway/dp_visa_master_logo.png" alt="DirectPay_payment" onclick="document.getElementById(\'directpay_payment_form\').submit();" max-width="20%" />
-
-</form>
-';
-
+        $redirectFormData["_type"] = "RECURRING";
+        $redirectFormData["_startDate"] = date("Y-m-d");
+        $redirectFormData["_endDate"] = $endDate;
+        $redirectFormData["_interval"] = $interval;
+        $redirectFormData["_doFirstPayment"] = "1";
 
     } else {
 
-        // TODO: Onetime Product
-
-//        $requestData = [
-//            "merchant_id" => $merchantId,
-//            "amount" => $amount ? (string)$amount : "0.00",
-//            "source" => "WHMCS_v1.1",
-//            "type" => "ONE_TIME",
-//            "order_id" => (string)$orderId,
-//            "currency" => $currencyCode,
-//            "response_url" => $responseUrl,
-//            "return_url" => $returnUrl,
-//            "first_name" => $firstName,
-//            "last_name" => $lastName,
-//            "email" => $email,
-//            "phone" => $phone,
-//            "logo" => '',
-//            "description" => $description,
-//        ];
-
         $dataString = $merchantId . $amount . $currencyCode . $pluginName . $pluginVersion . $returnUrl . $cancelUrl . $orderId .
             $reference . $firstName . $lastName . $email . $description . $apiKey . $responseUrl;
-        $pkeyid = openssl_get_privatekey($privateKey);
-        $signResult = openssl_sign($dataString, $signature, $pkeyid, OPENSSL_ALGO_SHA256);
-        $signatureEncoded = base64_encode($signature);
 
-
-        return '<form id="directpay_payment_form" method="POST" action="' . $gatewayUrl . '">
-                    <input type="hidden" name="_type" id="_type" value="ONE_TIME">
-                    <input type="hidden" name="_mId" id="_mId" value="' . $merchantId . '">
-                    <input type="hidden" name="_amount" id="_amount" value="' . $amount . '">
-                    <input type="hidden" name="_firstName" id="_firstName" value="' . $firstName . '">
-                    <input type="hidden" name="_lastName" id="_lastName" value="' . $lastName . '">
-                    <input type="hidden" name="_email" id="_email" value="' . $email . '">
-                    <input type="hidden" name="_reference" id="_reference" value="' . $reference . '">
-                    <input type="hidden" name="_description" id="_description" value="' . $description . '">
-                    <input type="hidden" name="_returnUrl" id="_returnUrl" value="' . $returnUrl . '">
-                    <input type="hidden" name="_cancelUrl" id="_cancelUrl" value="' . $cancelUrl . '">
-                    <input type="hidden" name="_responseUrl" id="_responseUrl" value="' . $responseUrl . '">
-                    <input type="hidden" name="_currency" id="_currency" value="' . $currencyCode . '">
-                    <input type="hidden" name="_orderId" id="_orderId" value="' . $orderId . '">
-                    <input type="hidden" name="_pluginVersion" id="_pluginVersion" value="' . $pluginVersion . '">
-                    <input type="hidden" name="_pluginName" id="_pluginName" value="' . $pluginName . '">
-                    <input type="hidden" name="api_key" id="api_key" value="' . $apiKey . '">
-                    <input type="hidden" name="signature" id="signature" value="' . $signatureEncoded . '">
-                
-                    <img src="https://cdn.directpay.lk/live/gateway/dp_visa_master_logo.png" alt="DirectPay_payment" onclick="document.getElementById(\'directpay_payment_form\').submit();" max-width="20%" />
-                </form>
-                ';
+        $redirectFormData["_type"] = "ONE_TIME";
 
     }
 
-//    $dataString = base64_encode(json_encode($requestData));
-//    $signature = 'hmac ' . hash_hmac('sha256', $dataString, $secret);
-//
-//    // Call API and get payment session URL
-//    $ch = curl_init();
-//
-//    curl_setopt_array($ch, array(
-//        CURLOPT_URL => $gatewayUrl,
-//        CURLOPT_RETURNTRANSFER => true,
-//        CURLOPT_ENCODING => "",
-//        CURLOPT_MAXREDIRS => 10,
-//        CURLOPT_TIMEOUT => 30,
-//        CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-//        CURLOPT_CUSTOMREQUEST => "POST",
-//        CURLOPT_POSTFIELDS => base64_encode(json_encode($requestData)),
-//        CURLOPT_HTTPHEADER => [
-//            "Content-Type: application/json",
-//            "Authorization: $signature",
-//        ],
-//    ));
+    $pkeyid = openssl_get_privatekey($privateKey);
+    $signResult = openssl_sign($dataString, $signature, $pkeyid, OPENSSL_ALGO_SHA256);
+    $signatureEncoded = base64_encode($signature);
 
-//    $response = curl_exec($ch);
-//    if (curl_error($ch)) {
-//        printToLog('Unable to fetch payment link: ' . curl_errno($ch) . ' - ' . curl_error($ch));
-//    }
-//    curl_close($ch);
-//
-//    $getSession = json_decode($response);
-//
-//    if ($getSession->status == 200) {
-//        $link = $getSession->data->link;
-//        $paymentRedirect = $link;
-//    } else {
-//        $paymentRedirect = $returnUrl;
-//    }
-//
-//    // Redirect to Payment Gateway
-//    return '<form id="directpay_payment_form" method="GET" action="' . $paymentRedirect . '">
-//                <img src="https://cdn.directpay.lk/live/gateway/dp_visa_master_logo.png" alt="DirectPay_payment" width="20%" min-width="200px" onclick="document.getElementById(\'directpay_payment_form\').submit();" />
-//                <input type="submit" value="' . $langPayNow . '">
-//            </form>';
+    $redirectFormData["signature"] = $signatureEncoded;
 
+    $redirectForm .= '<form id="directpay_payment_form" method="POST" action="' . $gatewayUrl . '">';
+    foreach ($redirectFormData as $key => $value) {
+        $redirectForm .= '<input type="hidden" name="' . $key . '" id="' . $key . '" value="' . $value . '">';
+    }
+    $redirectForm .= '<img style="cursor: pointer;" src="https://cdn.directpay.lk/live/gateway/dp_visa_master_logo.png" alt="DirectPay_payment" onclick="document.getElementById(\'directpay_payment_form\').submit();" max-width="20%" />
+            </form>';
 
-
+    return $redirectForm;
 }
 
 function convertInterval($interval)

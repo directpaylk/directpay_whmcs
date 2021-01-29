@@ -34,15 +34,6 @@ foreach ($_SERVER as $key => $value) {
 
 logActivity('PAYMENT RESPONSE - headers: ' . json_encode($headers));
 
-//{
-//  "type":"ONE_TIME",
-//  "orderId":"WH99210129121217",
-//  "trnId":101698,
-//  "status":"SUCCESS",
-//  "desc":"Approved",
-//  "signature":"t\/WG0b8vfoop489VvwWN64uITOBQtmzT8tnYBrEfRpM0A93wJYIhPiHRWaGQzE80AU+NLOKzjdDmCF1W8r0LJQ=="
-//}
-
 $transactionType = $postBody["type"];
 //$orderId = $postBody["order_id"];
 $transactionId = $postBody["trnId"];
@@ -54,28 +45,6 @@ $invoiceId = $_GET['invoice'];
 
 $success = false;
 $responseValidation = '';
-
-logActivity($transactionType);
-logActivity($transactionId);
-logActivity($transactionStatus);
-logActivity($paymentAmount);
-logActivity($invoiceId);
-
-//$authHeaders = explode(' ', $headers['Authorization']);
-
-//if (count($authHeaders) == 2) {
-//    $hash = hash_hmac('sha256', $postBody_raw, $gatewayParams['secret']);
-//    if (strcmp($authHeaders[1], $hash) == 0) {
-//        $success = true;
-//    } else {
-//        $responseValidation = ' - Signature Verification Failed';
-//        echo "Signature Verification Failed.";
-//    }
-//} else {
-//    $responseValidation = ' - Invalid Signature';
-//    print_r($_SERVER);
-//    echo "Invalid Signature.";
-//}
 
 $dataString =  $postBody["orderId"].$postBody["trnId"].$postBody["status"].$postBody["desc"];
 $signature = $postBody["signature"];
