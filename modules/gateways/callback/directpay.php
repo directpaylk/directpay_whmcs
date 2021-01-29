@@ -77,6 +77,24 @@ logActivity($invoiceId);
 //    echo "Invalid Signature.";
 //}
 
+$dataString =  $postBody["orderId"].$postBody["trnId"].$postBody["status"].$postBody["desc"];
+$signature = $postBody["signature"];
+
+$keyfile = $gatewayParams['publicKey'];
+$pubKeyid = openssl_get_publickey($keyfile);
+$signatureVerify = openssl_verify($dataString, base64_decode($signature), $pubKeyid, OPENSSL_ALGO_SHA256);
+
+if ($signatureVerify == 1) {
+    echo("Signature valid"."\n");
+    logActivity("verified");
+} elseif ($signatureVerify == 0) {
+    logActivity("not verified");
+    echo("Signature invalid 1"."\n");
+} else {
+    logActivity("not verified 2");
+    echo("Signature invalid 2"."\n");
+}
+
 /**
  * Validate Callback Invoice ID.
  *
