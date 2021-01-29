@@ -32,6 +32,8 @@ foreach ($_SERVER as $key => $value) {
     $headers[$header] = $value;
 }
 
+print_r($headers);
+
 logActivity('PAYMENT RESPONSE - headers: ' . json_encode($headers));
 
 $transactionType = $postBody["type"];
