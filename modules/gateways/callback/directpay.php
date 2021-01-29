@@ -32,6 +32,8 @@ foreach ($_SERVER as $key => $value) {
     $headers[$header] = $value;
 }
 
+print_r($_SERVER);
+echo "===";
 print_r($headers);
 
 logActivity('PAYMENT RESPONSE - headers: ' . json_encode($headers));
@@ -136,3 +138,24 @@ if ($success) {
 }
 
 //header("Location: ".$gatewayParams['systemurl'].'viewinvoice.php?id='.$invoiceId);
+
+
+// Content-Length => 207
+// Host
+// Content-Type
+// User-Agent
+
+
+
+
+
+
+
+// Content-Length
+// Host
+// Content-Type
+// User-Agent
+
+// Accept: */*
+// Accept-Encoding: gzip, deflate, br
+// Connection: keep-alive
