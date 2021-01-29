@@ -162,33 +162,9 @@ function directpay_link($params)
 
         $priceResult = getPriceDetails($invoiceId, $mainProductOfRecurring);
 
-        // TODO: Recurring product
-
-//        $requestData = [
-//            "merchant_id" => $merchantId,
-//            "amount" => $amount ? (string)$amount : "0.00",
-//            "source" => "WHMCS_v1.1",
-//            "payment_category" => "PAYMENT_LINK",
-//            "type" => "RECURRING",
-//            "order_id" => (string)$orderId,
-//            "currency" => $currencyCode,
-//            "return_url" => $returnUrl,
-//            "response_url" => $responseUrl,
-//            "first_name" => $firstName,
-//            "last_name" => $lastName,
-//            "email" => $email,
-//            "phone" => $phone,
-//            "start_date" => date("Y-m-d"),
-//            "end_date" => $mainProductOfRecurring->_endDate,
-//            "do_initial_payment" => true,
-//            "initial_amount" => $priceResult->_startupTotal,
-//            "interval" => convertInterval($mainProductOfRecurring->_interval),
-//            "description" => $description,
-//        ];
-
         $endDate = $mainProductOfRecurring->_endDate;
         $interval = convertInterval($mainProductOfRecurring->_interval);
-        $initialAmount = $priceResult->_startupTotal;
+        $initialAmount = $priceResult->_startupTotal ? $priceResult->_startupTotal : $amount;
 
         $dataString = $merchantId . $initialAmount . $currencyCode . $pluginName . $pluginVersion . $returnUrl . $cancelUrl . $orderId .
             $reference . $firstName . $lastName . $email . $description . $apiKey . $responseUrl . date("Y-m-d") . $endDate .
