@@ -32,8 +32,7 @@ foreach ($_SERVER as $key => $value) {
     $headers[$header] = $value;
 }
 
-print_r($_SERVER);
-echo " ====================================== ";
+echo "Received Headers: ";
 print_r($headers);
 
 logActivity('PAYMENT RESPONSE - headers: ' . json_encode($headers));
@@ -59,15 +58,15 @@ $signatureVerify = openssl_verify($dataString, base64_decode($signature), $pubKe
 
 if ($signatureVerify == 1) {
     $success = true;
-    echo("Signature Verified.");
+    echo " Signature Verified. ";
 } elseif ($signatureVerify == 0) {
     logActivity("Signature Verification Failed.");
     $responseValidation = ' - Signature Verification Failed';
-    echo "Signature Verification Failed.";
+    echo " Signature Verification Failed. ";
 } else {
     logActivity("Invalid Signature.");
     $responseValidation = ' - Invalid Signature';
-    echo "Invalid Signature.";
+    echo " Invalid Signature. ";
 }
 
 /**
@@ -133,7 +132,7 @@ if ($success) {
             $gatewayModuleName
         );
 
-        echo "Invoice added successfully. InvoiceId: $invoiceId";
+        echo " Invoice added successfully. InvoiceId: $invoiceId ";
     }
 }
 
@@ -145,17 +144,27 @@ if ($success) {
 // Content-Type
 // User-Agent
 
+//Array
+//(
+//    [Content-Length] => 204
+//    [Host] => whmcstest.directpay.lk
+//    [Content-Type] => application/json
+//    [Accept] => */*
+//    [Accept-Encoding] => deflate, gzip
+//)
 
 
 
 
 
 
+
+// POSTMAN
 // Content-Length
 // Host
 // Content-Type
-// User-Agent
-
 // Accept: */*
 // Accept-Encoding: gzip, deflate, br
+
+// User-Agent
 // Connection: keep-alive
