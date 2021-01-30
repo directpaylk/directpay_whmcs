@@ -33,7 +33,7 @@ foreach ($_SERVER as $key => $value) {
 }
 
 echo "Received Headers: ";
-print_r($headers);
+echo json_encode($headers);
 
 logActivity('PAYMENT RESPONSE - headers: ' . json_encode($headers));
 
