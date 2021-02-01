@@ -199,6 +199,7 @@ function directpay_link($params)
         $redirectForm .= '<input type="hidden" name="' . $key . '" id="' . $key . '" value="' . $value . '">';
     }
     $redirectForm .= '<img style="cursor: pointer;" src="https://cdn.directpay.lk/live/gateway/dp_visa_master_logo.png" alt="DirectPay_payment" onclick="document.getElementById(\'directpay_payment_form\').submit();" max-width="20%" />
+            <input type="submit" value="' . $langPayNow . '">
             </form>';
 
     return $redirectForm;
