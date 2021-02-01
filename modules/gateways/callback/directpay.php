@@ -48,6 +48,7 @@ $invoiceId = $_GET['invoice'];
 
 $success = false;
 $responseValidation = '';
+$zeroFee = "0";
 
 $dataString =  $postBody["orderId"].$postBody["trnId"].$postBody["status"].$postBody["desc"];
 $signature = $postBody["signature"];
@@ -128,7 +129,7 @@ if ($success) {
             $invoiceId,
             $transactionId,
             $paymentAmount,
-            0.00,
+            $zeroFee,
             $gatewayModuleName
         );
 
@@ -137,34 +138,3 @@ if ($success) {
 }
 
 //header("Location: ".$gatewayParams['systemurl'].'viewinvoice.php?id='.$invoiceId);
-
-
-// Content-Length => 207
-// Host
-// Content-Type
-// User-Agent
-
-//Array
-//(
-//    [Content-Length] => 204
-//    [Host] => whmcstest.directpay.lk
-//    [Content-Type] => application/json
-//    [Accept] => */*
-//    [Accept-Encoding] => deflate, gzip
-//)
-
-
-
-
-
-
-
-// POSTMAN
-// Content-Length
-// Host
-// Content-Type
-// Accept: */*
-// Accept-Encoding: gzip, deflate, br
-
-// User-Agent
-// Connection: keep-alive
