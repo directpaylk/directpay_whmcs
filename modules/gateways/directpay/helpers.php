@@ -49,7 +49,7 @@ class PriceData
 
 function printToLog($message)
 {
-    if (true) {
+    if (false) {
         echo "
             <div>
                 <p
