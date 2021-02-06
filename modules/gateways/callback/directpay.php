@@ -18,7 +18,7 @@ if (!$gatewayParams['type']) {
 
 // Retrieve data returned in payment gateway callback
 $postBody_raw = file_get_contents('php://input');
-$postBody = json_decode($postBody_raw, true);
+$postBody = json_decode(base64_decode($postBody_raw), true);
 
 logActivity('PAYMENT RESPONSE - invoice_id: ' . $_GET['invoice']);
 logActivity('PAYMENT RESPONSE - body: ' . $postBody_raw);
@@ -32,42 +32,35 @@ foreach ($_SERVER as $key => $value) {
     $headers[$header] = $value;
 }
 
-echo "Received Headers: ";
-echo json_encode($headers);
-
 logActivity('PAYMENT RESPONSE - headers: ' . json_encode($headers));
 
 $transactionType = $postBody["type"];
-//$orderId = $postBody["order_id"];
-$transactionId = $postBody["trnId"];
-$transactionStatus = $postBody["status"];
-//$transactionDesc = isset($postBody["transaction"]) ? $postBody["transaction"]["description"] : "-";
-$paymentAmount = $_GET["amount"];
-//$paymentCurrency = isset($postBody["transaction"]) ? $postBody["transaction"]["currency"] : "LKR";
+$orderId = $postBody["order_id"];
+$transactionId = $postBody["transaction_id"];
+$transactionStatus = isset($postBody["transaction"]) ? $postBody["transaction"]["status"] : "-";
+$transactionDesc = isset($postBody["transaction"]) ? $postBody["transaction"]["description"] : "-";
+$paymentAmount = isset($postBody["transaction"]) ? $postBody["transaction"]["amount"] : "0.00";
+$paymentCurrency = isset($postBody["transaction"]) ? $postBody["transaction"]["currency"] : "LKR";
 $invoiceId = $_GET['invoice'];
 
 $success = false;
 $responseValidation = '';
 $zeroFee = "0";
 
-$dataString =  $postBody["orderId"].$postBody["trnId"].$postBody["status"].$postBody["desc"];
-$signature = $postBody["signature"];
+$authHeaders = explode(' ', $headers['Authorization']);
 
-$keyfile = $gatewayParams['publicKey'];
-$pubKeyid = openssl_get_publickey($keyfile);
-$signatureVerify = openssl_verify($dataString, base64_decode($signature), $pubKeyid, OPENSSL_ALGO_SHA256);
-
-if ($signatureVerify == 1) {
-    $success = true;
-    echo " Signature Verified. ";
-} elseif ($signatureVerify == 0) {
-    logActivity("Signature Verification Failed.");
-    $responseValidation = ' - Signature Verification Failed';
-    echo " Signature Verification Failed. ";
+if (count($authHeaders) == 2) {
+    $hash = hash_hmac('sha256', $postBody_raw, $gatewayParams['secret']);
+    if (strcmp($authHeaders[1], $hash) == 0) {
+        $success = true;
+        echo " Signature Verified. ";
+    } else {
+        $responseValidation = ' - Signature Verification Failed';
+        echo " Signature Verification Failed. ";
+    }
 } else {
-    logActivity("Invalid Signature.");
     $responseValidation = ' - Invalid Signature';
-    echo " Invalid Signature. ";
+    echo " Invalid Signature. Headers: " . json_encode($headers) . " | Raw Headers: " . json_encode($_SERVER);
 }
 
 /**
