@@ -34,12 +34,28 @@ function directpay_config()
             'Default' => '',
             'Description' => 'Your Merchant ID from DirectPay',
         ),
-        'secret' => array(
-            'FriendlyName' => 'Secret Key',
-            'Type' => 'text',
-            'Size' => '191',
+        'privateKey' => array(
+            'FriendlyName' => 'Private Key',
+            'Type' => 'textarea',
+            'cols' => 3,
+            'rows' => 5,
             'Default' => '',
-            'Description' => 'Secret Key string from DirectPay',
+            'Description' => 'Private Key string from DirectPay',
+        ),
+        'publicKey' => array(
+            'FriendlyName' => 'Public Key',
+            'Type' => 'textarea',
+            'cols' => 3,
+            'rows' => 5,
+            'Default' => '',
+            'Description' => 'Public Key string from DirectPay',
+        ),
+        'apiKey' => array(
+            'FriendlyName' => 'API Key',
+            'Type' => 'text',
+            'Size' => '255',
+            'Default' => '',
+            'Description' => 'API key string',
         ),
         'notifyUrl' => array(
             'FriendlyName' => 'Notify URL',
@@ -63,6 +79,9 @@ function directpay_link($params)
     $merchantId = $params['merchantId'];
     $testMode = $params['sandBox'];
     $notifyUrl = $params['notifyUrl'];
+    $privateKey = $params['privateKey'];
+    $publicKey = $params['publicKey'];
+    $apiKey = $params['apiKey'];
 
     // Invoice Parameters
     $invoiceId = $params['invoiceid'];
@@ -92,130 +111,119 @@ function directpay_link($params)
     $moduleName = $params['paymentmethod'];
     $whmcsVersion = $params['whmcsVersion'];
 
+    $cancelUrl = $returnUrl;
+
+    $pluginName = "WHMCS";
+    $pluginVersion = "_v1.0";
+
     $orderId = 'WH' . $invoiceId . date("ymdHis");
+
+    $reference = $orderId;
 
 //    $responseUrl = $systemUrl . 'modules/gateways/callback/' . $moduleName . '.php?invoice=' . $invoiceId;
 //    $responseUrl = 'https://' . $_SERVER['HTTP_HOST'] . '/modules/gateways/callback/' . $moduleName . '.php?invoice=' . $invoiceId;
-    $responseUrl = $notifyUrl . '?invoice=' . $invoiceId;
+    $responseUrl = $notifyUrl . '?invoice=' . $invoiceId . '&amount=' . $amount;
 
     printToLog($responseUrl);
 
     // API Connection Details
     if ($testMode == 'on') {
-        $gatewayUrl = "https://test-gateway.directpay.lk/api/v3/create-session";
+        $gatewayUrl = "https://testpay.directpay.lk/";
     } else {
-        $gatewayUrl = "https://gateway.directpay.lk/api/v3/create-session";
+        $gatewayUrl = "https://pay.directpay.lk/";
     }
 
     printToLog("Test Mode: " . ($testMode ? "yes" : "no"));
     printToLog($gatewayUrl);
 
+    $redirectForm = '';
+    $signature = '';
+
     $mainProductOfRecurring = getRecurringItem($invoiceId);
+
+    $redirectFormData = array();
+    $redirectFormData["_mId"] = $merchantId;
+    $redirectFormData["_firstName"] = $firstName;
+    $redirectFormData["_lastName"] = $lastName;
+    $redirectFormData["_email"] = $email;
+    $redirectFormData["_reference"] = $reference;
+    $redirectFormData["_description"] = $description;
+    $redirectFormData["_returnUrl"] = $returnUrl;
+    $redirectFormData["_cancelUrl"] = $cancelUrl;
+    $redirectFormData["_responseUrl"] = $responseUrl;
+    $redirectFormData["_currency"] = $currencyCode;
+    $redirectFormData["_orderId"] = $orderId;
+    $redirectFormData["_pluginVersion"] = $pluginVersion;
+    $redirectFormData["_pluginName"] = $pluginName;
+    $redirectFormData["api_key"] = $apiKey;
 
     // Set post values
     if ($mainProductOfRecurring != null) {
 
         $priceResult = getPriceDetails($invoiceId, $mainProductOfRecurring);
 
-        $requestData = [
-            "merchant_id" => $merchantId,
-            "amount" => $amount ? (string)$amount : "0.00",
-            "source" => "WHMCS_v1.1",
-            "payment_category" => "PAYMENT_LINK",
-            "type" => "RECURRING",
-            "order_id" => (string)$orderId,
-            "currency" => $currencyCode,
-            "return_url" => $returnUrl,
-            "response_url" => $responseUrl,
-            "first_name" => $firstName,
-            "last_name" => $lastName,
-            "email" => $email,
-            "phone" => $phone,
-            "start_date" => date("Y-m-d"),
-            "end_date" => $mainProductOfRecurring->_endDate,
-            "do_initial_payment" => true,
-            "initial_amount" => $priceResult->_startupTotal,
-            "interval" => convertInterval($mainProductOfRecurring->_interval),
-            "description" => $description,
-        ];
+        $endDate = $mainProductOfRecurring->_endDate;
+        $interval = convertInterval($mainProductOfRecurring->_interval);
+        $initialAmount = $priceResult->_startupTotal ? $priceResult->_startupTotal : $amount;
+
+        $dataString = $merchantId . $initialAmount . $currencyCode . $pluginName . $pluginVersion . $returnUrl . $cancelUrl . $orderId .
+            $reference . $firstName . $lastName . $email . $description . $apiKey . $responseUrl . date("Y-m-d") . $endDate .
+            $interval . "1";
+
+        $redirectFormData["_type"] = "RECURRING";
+        $redirectFormData["_startDate"] = date("Y-m-d");
+        $redirectFormData["_endDate"] = $endDate;
+        $redirectFormData["_interval"] = $interval;
+        $redirectFormData["_doFirstPayment"] = "1";
+        $redirectFormData["_recurringAmount"] = $amount;
+        $redirectFormData["_amount"] = $initialAmount;
+
     } else {
-        $requestData = [
-            "merchant_id" => $merchantId,
-            "amount" => $amount ? (string)$amount : "0.00",
-            "source" => "WHMCS_v1.1",
-            "type" => "ONE_TIME",
-            "order_id" => (string)$orderId,
-            "currency" => $currencyCode,
-            "response_url" => $responseUrl,
-            "return_url" => $returnUrl,
-            "first_name" => $firstName,
-            "last_name" => $lastName,
-            "email" => $email,
-            "phone" => $phone,
-            "logo" => '',
-            "description" => $description,
-        ];
+
+        $dataString = $merchantId . $amount . $currencyCode . $pluginName . $pluginVersion . $returnUrl . $cancelUrl . $orderId .
+            $reference . $firstName . $lastName . $email . $description . $apiKey . $responseUrl;
+
+        $redirectFormData["_type"] = "ONE_TIME";
+        $redirectFormData["_amount"] = $amount;
+
     }
 
-    $dataString = base64_encode(json_encode($requestData));
-    $signature = 'hmac ' . hash_hmac('sha256', $dataString, $secret);
+    $pkeyid = openssl_get_privatekey($privateKey);
+    $signResult = openssl_sign($dataString, $signature, $pkeyid, OPENSSL_ALGO_SHA256);
+    $signatureEncoded = base64_encode($signature);
 
-    // Call API and get payment session URL
-    $ch = curl_init();
+    $redirectFormData["signature"] = $signatureEncoded;
 
-    curl_setopt_array($ch, array(
-        CURLOPT_URL => $gatewayUrl,
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_ENCODING => "",
-        CURLOPT_MAXREDIRS => 10,
-        CURLOPT_TIMEOUT => 30,
-        CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-        CURLOPT_CUSTOMREQUEST => "POST",
-        CURLOPT_POSTFIELDS => base64_encode(json_encode($requestData)),
-        CURLOPT_HTTPHEADER => [
-            "Content-Type: application/json",
-            "Authorization: $signature",
-        ],
-    ));
-
-    $response = curl_exec($ch);
-    if (curl_error($ch)) {
-        printToLog('Unable to fetch payment link: ' . curl_errno($ch) . ' - ' . curl_error($ch));
+    $redirectForm .= '<form id="directpay_payment_form" method="POST" action="' . $gatewayUrl . '">';
+    foreach ($redirectFormData as $key => $value) {
+        $redirectForm .= '<input type="hidden" name="' . $key . '" id="' . $key . '" value="' . $value . '">';
     }
-    curl_close($ch);
-
-    $getSession = json_decode($response);
-
-    if ($getSession->status == 200) {
-        $link = $getSession->data->link;
-        $paymentRedirect = $link;
-    } else {
-        $paymentRedirect = $returnUrl;
-    }
-
-    // Redirect to Payment Gateway
-    return '<form id="directpay_payment_form" method="GET" action="' . $paymentRedirect . '">
-                <img src="https://cdn.directpay.lk/live/gateway/dp_visa_master_logo.png" alt="DirectPay_payment" width="20%" min-width="200px" onclick="document.getElementById(\'directpay_payment_form\').submit();" />
-                <input type="submit" value="' . $langPayNow . '">
+    $redirectForm .= '<img style="cursor: pointer;" src="https://cdn.directpay.lk/live/gateway/dp_visa_master_logo.png" alt="DirectPay_payment" onclick="document.getElementById(\'directpay_payment_form\').submit();" max-width="20%" />
+            <input type="submit" value="' . $langPayNow . '">
             </form>';
 
+    return $redirectForm;
 }
 
 function convertInterval($interval)
 {
     switch ($interval) {
         case 'MONTHLY':
-            return 1;
-        case 'BIANNUAL':
-            return 2;
-        case 'YEARLY':
             return 3;
+        case 'BIANNUAL':
+            return 1;
+        case 'YEARLY':
+            return 0;
         case 'QUARTERLY':
+            return 2;
+        case 'WEEKLY':
             return 4;
-        case 'BIENNIALLY':
+        case 'DAILY':
             return 5;
-        case 'TRIENNIALLY':
+        case 'BIENNIALLY':
             return 6;
+        case 'TRIENNIALLY':
+            return 7;
         default:
             return $interval;
     }
