@@ -45,19 +45,22 @@ $invoiceId = $_GET['invoice'];
 
 $success = false;
 $responseValidation = '';
+$zeroFee = "0";
+
 $authHeaders = explode(' ', $headers['Authorization']);
 
 if (count($authHeaders) == 2) {
     $hash = hash_hmac('sha256', $postBody_raw, $gatewayParams['secret']);
     if (strcmp($authHeaders[1], $hash) == 0) {
         $success = true;
+        echo " Signature Verified. ";
     } else {
         $responseValidation = ' - Signature Verification Failed';
-        echo "Signature Verification Failed.";
+        echo " Signature Verification Failed. ";
     }
 } else {
     $responseValidation = ' - Invalid Signature';
-    echo "Invalid Signature.";
+    echo " Invalid Signature. Headers: " . json_encode($headers) . " | Raw Headers: " . json_encode($_SERVER);
 }
 
 /**
@@ -119,11 +122,11 @@ if ($success) {
             $invoiceId,
             $transactionId,
             $paymentAmount,
-            0.00,
+            $zeroFee,
             $gatewayModuleName
         );
 
-        echo "Invoice added successfully. InvoiceId: $invoiceId";
+        echo " Invoice added successfully. InvoiceId: $invoiceId ";
     }
 }
 
