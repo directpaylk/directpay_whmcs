@@ -6,7 +6,7 @@ if (!defined("WHMCS")) {
 
 use WHMCS\Database\Capsule;
 
-require 'directpay/helpers.php';
+require 'directpay/helper_methods.php';
 
 function directpay_MetaData()
 {
@@ -18,6 +18,11 @@ function directpay_MetaData()
     );
 }
 
+/**
+ * Define gateway configuration options.
+ *
+ * @return array
+ */
 function directpay_config()
 {
     $responseUrl = 'https://' . $_SERVER['HTTP_HOST'] . '/modules/gateways/callback/directpay.php';
@@ -56,6 +61,15 @@ function directpay_config()
     );
 }
 
+/**
+ * Payment link.
+ *
+ * @param array $params Payment Gateway Module Parameters
+ *
+ * @return string
+ * @see https://developers.whmcs.com/payment-gateways/third-party-gateway/
+ *
+ */
 function directpay_link($params)
 {
     // Gateway Configuration Parameters
@@ -71,9 +85,8 @@ function directpay_link($params)
     $currencyCode = $params['currency'];
 
     // Client Parameters
-    $firstName = $params['clientdetails']['firstname'];
-    $lastName = $params['clientdetails']['lastname'];
-    $fullName = $firstName . " " . $lastName;
+    $firstname = $params['clientdetails']['firstname'];
+    $lastname = $params['clientdetails']['lastname'];
     $email = $params['clientdetails']['email'];
     $address1 = $params['clientdetails']['address1'];
     $address2 = $params['clientdetails']['address2'];
@@ -94,11 +107,7 @@ function directpay_link($params)
 
     $orderId = 'WH' . $invoiceId . date("ymdHis");
 
-//    $responseUrl = $systemUrl . 'modules/gateways/callback/' . $moduleName . '.php?invoice=' . $invoiceId;
-//    $responseUrl = 'https://' . $_SERVER['HTTP_HOST'] . '/modules/gateways/callback/' . $moduleName . '.php?invoice=' . $invoiceId;
     $responseUrl = $notifyUrl . '?invoice=' . $invoiceId;
-
-    printToLog($responseUrl);
 
     // API Connection Details
     if ($testMode == 'on') {
@@ -107,116 +116,89 @@ function directpay_link($params)
         $gatewayUrl = "https://gateway.directpay.lk/api/v3/create-session";
     }
 
-    printToLog("Test Mode: " . ($testMode ? "yes" : "no"));
-    printToLog($gatewayUrl);
+    $recurringItem = getRecurringInfoByInvoiceId($invoiceId);
 
-    $mainProductOfRecurring = getRecurringItem($invoiceId);
+    debugLog(json_encode($recurringItem), '$recurringItem');
 
-    // Set post values
-    if ($mainProductOfRecurring != null) {
+    $htmlOutput = '';
 
-        $priceResult = getPriceDetails($invoiceId, $mainProductOfRecurring);
-
-        $requestData = [
-            "merchant_id" => $merchantId,
-            "amount" => $amount ? (string)$amount : "0.00",
-            "source" => "WHMCS_v1.1",
-            "payment_category" => "PAYMENT_LINK",
-            "type" => "RECURRING",
-            "order_id" => (string)$orderId,
-            "currency" => $currencyCode,
-            "return_url" => $returnUrl,
-            "response_url" => $responseUrl,
-            "first_name" => $firstName,
-            "last_name" => $lastName,
-            "email" => $email,
-            "phone" => $phone,
-            "start_date" => date("Y-m-d"),
-            "end_date" => $mainProductOfRecurring->_endDate,
-            "do_initial_payment" => true,
-            "initial_amount" => $priceResult->_startupTotal,
-            "interval" => convertInterval($mainProductOfRecurring->_interval),
-            "description" => $description,
-        ];
+    if ($recurringItem['invalid']) {
+        $htmlOutput = "<p>{$recurringItem['details']}</p>";
     } else {
         $requestData = [
             "merchant_id" => $merchantId,
             "amount" => $amount ? (string)$amount : "0.00",
             "source" => "WHMCS_v1.1",
             "type" => "ONE_TIME",
+            "payment_category" => "PAYMENT_LINK",
             "order_id" => (string)$orderId,
             "currency" => $currencyCode,
-            "response_url" => $responseUrl,
             "return_url" => $returnUrl,
-            "first_name" => $firstName,
-            "last_name" => $lastName,
+            "response_url" => $responseUrl,
+            "first_name" => $firstname,
+            "last_name" => $lastname,
             "email" => $email,
             "phone" => $phone,
-            "logo" => '',
+            "logo" => "",
             "description" => $description,
         ];
-    }
 
-    $dataString = base64_encode(json_encode($requestData));
-    $signature = 'hmac ' . hash_hmac('sha256', $dataString, $secret);
+        if ($recurringItem['recurring']) {
+            $requestData["type"] = "RECURRING";
+            $requestData["amount"] = $recurringItem['recurring_amount'];
+            $requestData["start_date"] = $recurringItem['start_date'];
+            $requestData["end_date"] = $recurringItem['end_date'];
+            $requestData["do_initial_payment"] = true;
+            $requestData["initial_amount"] = $amount ? (string)$amount : "0.00";
+            $requestData["interval"] = convertInterval($recurringItem['interval']);
+        }
 
-    // Call API and get payment session URL
-    $ch = curl_init();
+        debugLog(json_encode($requestData), 'Payment data');
 
-    curl_setopt_array($ch, array(
-        CURLOPT_URL => $gatewayUrl,
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_ENCODING => "",
-        CURLOPT_MAXREDIRS => 10,
-        CURLOPT_TIMEOUT => 30,
-        CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-        CURLOPT_CUSTOMREQUEST => "POST",
-        CURLOPT_POSTFIELDS => base64_encode(json_encode($requestData)),
-        CURLOPT_HTTPHEADER => [
-            "Content-Type: application/json",
-            "Authorization: $signature",
-        ],
-    ));
+        $dataString = base64_encode(json_encode($requestData));
+        $signature = 'hmac ' . hash_hmac('sha256', $dataString, $secret);
 
-    $response = curl_exec($ch);
-    if (curl_error($ch)) {
-        printToLog('Unable to fetch payment link: ' . curl_errno($ch) . ' - ' . curl_error($ch));
-    }
-    curl_close($ch);
+        debugLog($signature, 'Signature');
 
-    $getSession = json_decode($response);
+        // Call API and get payment session URL
+        $ch = curl_init();
 
-    if ($getSession->status == 200) {
-        $link = $getSession->data->link;
-        $paymentRedirect = $link;
-    } else {
-        $paymentRedirect = $returnUrl;
-    }
+        curl_setopt_array($ch, array(
+            CURLOPT_URL => $gatewayUrl,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => "",
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_TIMEOUT => 30,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST => "POST",
+            CURLOPT_POSTFIELDS => base64_encode(json_encode($requestData)),
+            CURLOPT_HTTPHEADER => [
+                "Content-Type: application/json",
+                "Authorization: $signature",
+            ],
+        ));
 
-    // Redirect to Payment Gateway
-    return '<form id="directpay_payment_form" method="GET" action="' . $paymentRedirect . '">
+        $response = curl_exec($ch);
+        if (curl_error($ch)) {
+            debugLog('Unable to fetch payment link: ' . curl_errno($ch) . ' - ' . curl_error($ch));
+        }
+        curl_close($ch);
+
+        $getSession = json_decode($response);
+
+        if ($getSession->status == 200) {
+            $link = $getSession->data->link;
+            $paymentRedirect = $link;
+        } else {
+            $paymentRedirect = $returnUrl;
+        }
+
+        $htmlOutput = '<form id="directpay_payment_form" method="GET" action="' . $paymentRedirect . '">
                 <img style="cursor: pointer;" src="https://cdn.directpay.lk/live/gateway/dp_visa_master_logo.png" alt="DirectPay_payment" onclick="document.getElementById(\'directpay_payment_form\').submit();" max-width="20%" />
                 <input type="submit" value="' . $langPayNow . '">
             </form>';
 
-}
-
-function convertInterval($interval)
-{
-    switch ($interval) {
-        case 'MONTHLY':
-            return 1;
-        case 'BIANNUAL':
-            return 2;
-        case 'YEARLY':
-            return 3;
-        case 'QUARTERLY':
-            return 4;
-        case 'BIENNIALLY':
-            return 5;
-        case 'TRIENNIALLY':
-            return 6;
-        default:
-            return $interval;
     }
+
+    return $htmlOutput;
 }
