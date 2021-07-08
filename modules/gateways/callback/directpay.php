@@ -5,6 +5,60 @@ require_once __DIR__ . '/../../../init.php';
 require_once __DIR__ . '/../../../includes/gatewayfunctions.php';
 require_once __DIR__ . '/../../../includes/invoicefunctions.php';
 
+use WHMCS\Database\Capsule;
+
+function getRecurringItemsWithScheduleId($id) {
+    return Capsule::table('tblhosting')
+        ->where('subscriptionid', '=', $id)
+        ->get();
+}
+
+function saveSubscriptionForInvoice($invoiceId, $scheduleId) {
+    $hostingItems = Capsule::table('tblinvoiceitems')
+        ->where([
+            ['invoiceid', '=', $invoiceId],
+            ['type', '=', 'Hosting']
+        ])
+        ->get();
+
+    if(!$hostingItems) {
+        echo " No hosting items for invoice: $invoiceId. ";
+    }
+
+    foreach ($hostingItems as $item){
+        Capsule::table('tblhosting')
+            ->where('id', '=', $item->relid)
+            ->update(['subscriptionid' => $scheduleId]);
+    }
+}
+
+function getLatestInvoiceId($scheduleId, $invoiceId) {
+    $newInvoiceId = $invoiceId;
+
+    $hostingItem = Capsule::table('tblhosting')
+        ->where('subscriptionid', '=', $scheduleId)
+        ->orderBy('id', 'DESC')
+        ->first();
+
+    if ($hostingItem) {
+        $invoiceItem = Capsule::table('tblinvoiceitems')
+            ->where('relid', '=', $hostingItem->id)
+            ->where('type', '=', 'Hosting')
+            ->first();
+
+        if ($invoiceItem) {
+            $newInvoiceId = $invoiceItem->invoiceid;
+        } else {
+            echo " Invoice item not found for schedule: $scheduleId. ";
+        }
+    } else {
+        echo " Hosting item not found for schedule: $scheduleId. ";
+    }
+
+    return $newInvoiceId;
+}
+
+
 // Detect module name from filename.
 $gatewayModuleName = basename(__FILE__, '.php');
 
@@ -34,13 +88,17 @@ foreach ($_SERVER as $key => $value) {
 
 logActivity('PAYMENT RESPONSE - headers: ' . json_encode($headers));
 
+const RECURRING = 'RECURRING';
+
 $transactionType = $postBody["type"];
 $orderId = $postBody["order_id"];
 $transactionId = $postBody["transaction_id"];
+$transactionType = $postBody["type"];
 $transactionStatus = isset($postBody["transaction"]) ? $postBody["transaction"]["status"] : "-";
 $transactionDesc = isset($postBody["transaction"]) ? $postBody["transaction"]["description"] : "-";
 $paymentAmount = isset($postBody["transaction"]) ? $postBody["transaction"]["amount"] : "0.00";
 $paymentCurrency = isset($postBody["transaction"]) ? $postBody["transaction"]["currency"] : "LKR";
+$scheduleId = isset($postBody["recurring"]) ? $postBody["recurring"]["id"] : "0";
 $invoiceId = $_GET['invoice'];
 
 $success = false;
@@ -62,6 +120,37 @@ if (count($authHeaders) == 2) {
     $responseValidation = ' - Invalid Signature';
     echo " Invalid Signature. Headers: " . json_encode($headers) . " | Raw Headers: " . json_encode($_SERVER);
 }
+
+if ($success) {
+    if ($transactionType == RECURRING) {
+        $itemExists = getRecurringItemsWithScheduleId($scheduleId);
+        echo " Found recurring products: " . sizeof($itemExists) . ". ";
+
+        if (sizeof($itemExists) > 0) {
+            logActivity('Recurring Subscription exists. Invoice ID: ' . $invoiceId);
+            echo " Subscription exists. ";
+            $invoiceId = getLatestInvoiceId($scheduleId, $invoiceId);
+        } else {
+            logActivity('New Recurring Subscription. Invoice ID: ' . $invoiceId);
+            echo " New subscription. ";
+            saveSubscriptionForInvoice($invoiceId, $scheduleId);
+        }
+    }
+}
+
+/**
+ * Log Transaction.
+ *
+ * Add an entry to the Gateway Log for debugging purposes.
+ *
+ * The debug data can be a string or an array. In the case of an
+ * array it will be
+ *
+ * @param string $gatewayName Display label
+ * @param string|array $debugData Data to log
+ * @param string $transactionStatus Status
+ */
+logTransaction($gatewayParams['name'], json_encode($postBody), "Invoice: " . $invoiceId . " | Transaction Status: " . $transactionStatus . $responseValidation);
 
 /**
  * Validate Callback Invoice ID.
@@ -89,21 +178,6 @@ $invoiceId = checkCbInvoiceID($invoiceId, $gatewayParams['name']);
  * @param string $transactionId Unique Transaction ID
  */
 checkCbTransID($transactionId);
-
-
-/**
- * Log Transaction.
- *
- * Add an entry to the Gateway Log for debugging purposes.
- *
- * The debug data can be a string or an array. In the case of an
- * array it will be
- *
- * @param string $gatewayName Display label
- * @param string|array $debugData Data to log
- * @param string $transactionStatus Status
- */
-logTransaction($gatewayParams['name'], json_encode($postBody), "Invoice: " . $invoiceId . " | Transaction Status: " . $transactionStatus . $responseValidation);
 
 if ($success) {
     if ($transactionStatus == 'SUCCESS') {
