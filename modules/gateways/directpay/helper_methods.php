@@ -14,7 +14,7 @@ const INT_TRIENNIALLY = "TRIENNIALLY";
 
 function debugLog($message, $key = '')
 {
-    if (true) {
+    if (false) {
         echo "
             <div>
                 <p style='padding: 10px; 
