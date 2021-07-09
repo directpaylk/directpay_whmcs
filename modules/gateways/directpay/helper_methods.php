@@ -166,7 +166,7 @@ function getRecurringInfo($interval, $cycles)
             break;
         default:
             $recurringInfo->invalidItem = true;
-            $recurringInfo->invalidDescription = "Cannot accept " . ucfirst($interval) . " payments.";
+            $recurringInfo->invalidDescription = "Cannot accept " . ucfirst($interval) . " payments. Please try products with a valid recurring frequency.";
     }
 
     $totalMonths = $months * $cycles;
@@ -240,7 +240,7 @@ function getPaymentItemByInvoiceItem($invoiceItem)
                     $interval = INT_ANNUALLY;
                 } else {
                     $paymentItem->invalidItem = true;
-                    $paymentItem->invalidDescription = "Cannot proceed with selected registration period";
+                    $paymentItem->invalidDescription = "Cannot proceed with selected registration period. Try with Annual registration period.";
                 }
 
                 if ($interval != "") {
@@ -345,11 +345,11 @@ function getPaymentItemByInvoiceItem($invoiceItem)
                             $paymentItem->amount = $item->amount;
                         } else {
                             $paymentItem->invalidItem = true;
-                            $paymentItem->invalidDescription = "Cannot proceed with selected recurring cycle";
+                            $paymentItem->invalidDescription = "Cannot proceed with selected recurring cycle. Please try with an acceptable recurring cycle.";
                         }
                     } else {
                         $paymentItem->invalidItem = true;
-                        $paymentItem->invalidDescription = "Cannot proceed with selected recurring cycle";
+                        $paymentItem->invalidDescription = "Cannot proceed with selected recurring cycle. Recurring cycle should be valid for a recurring payment.";
                     }
                 }
 

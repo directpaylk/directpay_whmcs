@@ -51,7 +51,14 @@ function directpay_config()
             'Type' => 'text',
             'Size' => '191',
             'Default' => $responseUrl,
-            'Description' => 'Notification endpoint URL.<br><small>Default Endpoint - </small> <p style="color: grey;">' . $responseUrl . '</p>',
+            'Description' => 'Notification endpoint URL<br><small>Default Endpoint - </small> <p style="color: grey;">' . $responseUrl . '</p>',
+        ),
+        'logoUrl' => array(
+            'FriendlyName' => 'Logo URL',
+            'Type' => 'text',
+            'Size' => '191',
+            'Default' => '',
+            'Description' => 'Your logo URL to display at payment page',
         ),
         'sandBox' => array(
             'FriendlyName' => 'SandBox Mode',
@@ -77,6 +84,7 @@ function directpay_link($params)
     $merchantId = $params['merchantId'];
     $testMode = $params['sandBox'];
     $notifyUrl = $params['notifyUrl'];
+    $logoUrl = $params['logoUrl'];
 
     // Invoice Parameters
     $invoiceId = $params['invoiceid'];
@@ -123,7 +131,7 @@ function directpay_link($params)
     $htmlOutput = '';
 
     if ($recurringItem['invalid']) {
-        $htmlOutput = "<p>{$recurringItem['details']}</p>";
+        $htmlOutput = "<img src='https://cdn.directpay.lk/live/gateway/dp_visa_master_logo.png' alt='DirectPay_payment' max-width='20%' /><br><p>{$recurringItem['details']} <span style='color:red;'>*</span></p>";
     } else {
         $requestData = [
             "merchant_id" => $merchantId,
@@ -139,7 +147,7 @@ function directpay_link($params)
             "last_name" => $lastname,
             "email" => $email,
             "phone" => $phone,
-            "logo" => "",
+            "logo" => $logoUrl,
             "description" => $description,
         ];
 
@@ -160,7 +168,7 @@ function directpay_link($params)
 
         debugLog($signature, 'Signature');
 
-        // Call API and get payment session URL
+        /// Call API and get payment session URL
         $ch = curl_init();
 
         curl_setopt_array($ch, array(
