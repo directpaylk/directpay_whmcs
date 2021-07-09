@@ -9,5 +9,3 @@ Installation
 5. Click on Save Changes to save payment gateway configurations.
 
 NOTE: Before save changes, you can enable debug mode by checking SandBox Mode checkbox.
-
-Click here to register for DirectPay.

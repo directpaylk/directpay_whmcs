@@ -136,7 +136,7 @@ function directpay_link($params)
         $requestData = [
             "merchant_id" => $merchantId,
             "amount" => $amount ? (string)$amount : "0.00",
-            "source" => "WHMCS_v1.1",
+            "source" => "WHMCS_v1.3.0",
             "type" => "ONE_TIME",
             "payment_category" => "PAYMENT_LINK",
             "order_id" => (string)$orderId,
