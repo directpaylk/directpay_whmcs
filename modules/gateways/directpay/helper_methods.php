@@ -531,6 +531,22 @@ function getPaymentItemByInvoiceItem($invoiceItem)
     return $paymentItem;
 }
 
+function getTotalTaxAmount($invoiceId) {
+    $tax = 0.00;
+    $taxConfig = Capsule::table('tblconfiguration')
+        ->where('setting', '=', 'TaxType')
+        ->first();
+
+    if ($taxConfig->value === "Exclusive"){
+        $invoice = Capsule::table('tblinvoices')
+            ->where('id', '=', $invoiceId)
+            ->first();
+        $tax = $invoice->tax + $invoice->tax2;
+    }
+
+    return $tax;
+}
+
 function convertInterval($interval)
 {
     switch ($interval) {
