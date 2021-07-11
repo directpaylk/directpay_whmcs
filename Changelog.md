@@ -2,9 +2,11 @@
 
 All notable changes to this plugin will be documented in this file.
 
-## [1.3.0](https://github.com/) - Jul 9, 2021
+## [1.3.0](hhttps://github.com/directpaylk/directpay_whmcs/releases/tag/v1.3.0) - Jul 12, 2021
 
 ### Added
+- Prorata Billing Option.
+- Terminate subscription by product's `Auto Terminate/Fixed Term`.
 - Customize Logo on payment page.
 - Skip invoices containing, items with invalid recurring cycles.
 
@@ -14,7 +16,7 @@ All notable changes to this plugin will be documented in this file.
 
 ### Fixed
 - Save recurring invoice issue fixed.
-- Some known bugs.
+- Some other known issues.
 
 ## [1.2.3](https://github.com/directpaylk/directpay_whmcs/releases/tag/v1.2.3) - Feb 6, 2021
 
