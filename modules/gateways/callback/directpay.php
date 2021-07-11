@@ -21,12 +21,37 @@ function saveSubscriptionForInvoice($invoiceId, $scheduleId) {
         ])
         ->get();
 
+    $domainItems = Capsule::table('tblinvoiceitems')
+        ->where('invoiceid', '=', $invoiceId)
+        ->whereIn('type', ['Domain', 'DomainRegister', 'DomainTransfer'])
+        ->get();
+
     if(!$hostingItems) {
         echo " No hosting items for invoice: $invoiceId. ";
     }
 
+    if(!$domainItems) {
+        echo " No Domain items for invoice: $invoiceId. ";
+    }
+
     foreach ($hostingItems as $item){
         Capsule::table('tblhosting')
+            ->where('id', '=', $item->relid)
+            ->update(['subscriptionid' => $scheduleId]);
+
+        try {
+            Capsule::table('tblhostingaddons')
+                ->where('hostingid', '=', $item->relid)
+                ->update(['subscriptionid' => $scheduleId]);
+        } catch (Exception $exception) {
+            echo " Exception in addon subId update. ";
+            debugLog('[tblhostingaddons] | EXCEPTION: ' . $exception->getMessage(), 'EXCEPTION');
+            debugLog('[tblhostingaddons] | EXCEPTION: ' . $exception->getLine(), 'EXCEPTION');
+        }
+    }
+
+    foreach ($domainItems as $item){
+        Capsule::table('tbldomains')
             ->where('id', '=', $item->relid)
             ->update(['subscriptionid' => $scheduleId]);
     }
@@ -53,6 +78,26 @@ function getLatestInvoiceId($scheduleId, $invoiceId) {
         }
     } else {
         echo " Hosting item not found for schedule: $scheduleId. ";
+
+        $domainItem = Capsule::table('tbldomains')
+            ->where('subscriptionid', '=', $scheduleId)
+            ->orderBy('id', 'DESC')
+            ->first();
+
+        if ($domainItem) {
+            $invoiceItem = Capsule::table('tblinvoiceitems')
+                ->where('relid', '=', $domainItem->id)
+                ->whereIn('type', ['Domain', 'DomainRegister', 'DomainTransfer'])
+                ->first();
+
+            if ($invoiceItem) {
+                $newInvoiceId = $invoiceItem->invoiceid;
+            } else {
+                echo " Invoice item not found for schedule: $scheduleId. ";
+            }
+        } else {
+            echo " Domain item not found for schedule: $scheduleId. ";
+        }
     }
 
     return $newInvoiceId;
@@ -127,7 +172,7 @@ if ($success) {
         echo " Found recurring products: " . sizeof($itemExists) . ". ";
 
         if (sizeof($itemExists) > 0) {
-            logActivity('Recurring Subscription exists. Invoice ID: ' . $invoiceId);
+//            logActivity('Recurring Subscription exists. Invoice ID: ' . $invoiceId);
             echo " Subscription exists. ";
             $invoiceId = getLatestInvoiceId($scheduleId, $invoiceId);
         } else {

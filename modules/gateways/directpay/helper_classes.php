@@ -4,6 +4,7 @@ class RecurringInfoItem {
     public $amount = 0.00;
     public $interval = "";
     public $endDate = "";
+    public $startDate = "";
     public $dontExpire = false;
     public $invalidItem = false;
     public $invalidDescription = "";
@@ -12,6 +13,7 @@ class RecurringInfoItem {
 class PaymentItem {
     public $interval = "";
     public $endDate = "";
+    public $startDate = "";
     public $amount = 0.0;
     public $isRecurring = false;
     public $dontExpire = false;

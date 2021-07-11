@@ -135,8 +135,8 @@ function directpay_link($params)
     } else {
         $requestData = [
             "merchant_id" => $merchantId,
-            "amount" => $amount ? (string)$amount : "0.00",
-            "source" => "WHMCS_v1.1",
+            "amount" => $amount ? number_format($amount, 2, '.', '') : "0.00",
+            "source" => "WHMCS_v1.3.0",
             "type" => "ONE_TIME",
             "payment_category" => "PAYMENT_LINK",
             "order_id" => (string)$orderId,
@@ -152,8 +152,12 @@ function directpay_link($params)
         ];
 
         if ($recurringItem['recurring']) {
+            $totalTax = getTotalTaxAmount($invoiceId);
+
+            debugLog($totalTax, '$totalTax');
+
             $requestData["type"] = "RECURRING";
-            $requestData["amount"] = $recurringItem['recurring_amount'];
+            $requestData["amount"] = number_format($recurringItem['recurring_amount'] + $totalTax, 2, '.', '');
             $requestData["start_date"] = $recurringItem['start_date'];
             $requestData["end_date"] = $recurringItem['end_date'];
             $requestData["do_initial_payment"] = true;
@@ -191,6 +195,8 @@ function directpay_link($params)
             debugLog('Unable to fetch payment link: ' . curl_errno($ch) . ' - ' . curl_error($ch));
         }
         curl_close($ch);
+
+        $response = json_encode([]);
 
         $getSession = json_decode($response);
 
