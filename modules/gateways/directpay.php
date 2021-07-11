@@ -196,8 +196,6 @@ function directpay_link($params)
         }
         curl_close($ch);
 
-        $response = json_encode([]);
-
         $getSession = json_decode($response);
 
         if ($getSession->status == 200) {
