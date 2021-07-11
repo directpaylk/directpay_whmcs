@@ -169,28 +169,30 @@ function directpay_link($params)
         debugLog($signature, 'Signature');
 
         /// Call API and get payment session URL
-        $ch = curl_init();
+//        $ch = curl_init();
+//
+//        curl_setopt_array($ch, array(
+//            CURLOPT_URL => $gatewayUrl,
+//            CURLOPT_RETURNTRANSFER => true,
+//            CURLOPT_ENCODING => "",
+//            CURLOPT_MAXREDIRS => 10,
+//            CURLOPT_TIMEOUT => 30,
+//            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+//            CURLOPT_CUSTOMREQUEST => "POST",
+//            CURLOPT_POSTFIELDS => base64_encode(json_encode($requestData)),
+//            CURLOPT_HTTPHEADER => [
+//                "Content-Type: application/json",
+//                "Authorization: $signature",
+//            ],
+//        ));
+//
+//        $response = curl_exec($ch);
+//        if (curl_error($ch)) {
+//            debugLog('Unable to fetch payment link: ' . curl_errno($ch) . ' - ' . curl_error($ch));
+//        }
+//        curl_close($ch);
 
-        curl_setopt_array($ch, array(
-            CURLOPT_URL => $gatewayUrl,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_ENCODING => "",
-            CURLOPT_MAXREDIRS => 10,
-            CURLOPT_TIMEOUT => 30,
-            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-            CURLOPT_CUSTOMREQUEST => "POST",
-            CURLOPT_POSTFIELDS => base64_encode(json_encode($requestData)),
-            CURLOPT_HTTPHEADER => [
-                "Content-Type: application/json",
-                "Authorization: $signature",
-            ],
-        ));
-
-        $response = curl_exec($ch);
-        if (curl_error($ch)) {
-            debugLog('Unable to fetch payment link: ' . curl_errno($ch) . ' - ' . curl_error($ch));
-        }
-        curl_close($ch);
+        $response = json_encode([]);
 
         $getSession = json_decode($response);
 

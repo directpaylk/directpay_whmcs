@@ -1,6 +1,7 @@
 <?php
 
 use WHMCS\Database\Capsule;
+use WHMCS\Carbon;
 
 require 'helper_classes.php';
 
@@ -14,7 +15,7 @@ const INT_TRIENNIALLY = "TRIENNIALLY";
 
 function debugLog($message, $key = '')
 {
-    if (false) {
+    if (true) {
         echo "
             <div>
                 <p style='padding: 10px; 
@@ -114,6 +115,7 @@ function getRecurringInfoByInvoiceId($invoiceId)
                 if (($mainProducts == 1) || (($mainProducts > 1) && !$multipleInterval)) {
                     $recurringInfo["recurring"] = $isRecurring;
                     $recurringInfo["end_date"] = $mainProduct->endDate;
+                    $recurringInfo["start_date"] = $mainProduct->startDate;
                     $recurringInfo["recurring_amount"] = number_format($recurringTotal, 2, '.', '');
                     $recurringInfo["interval"] = $mainProduct->interval;
                     $recurringInfo["invalid"] = $mainProduct->invalidItem;
@@ -182,6 +184,31 @@ function getRecurringInfo($interval, $cycles)
     return $recurringInfo;
 }
 
+function getStartDate($interval, $day) {
+    $startDate = Carbon::now();
+    $months = 0;
+
+    switch ($interval) {
+        case "MONTHLY":
+            $months = 1;
+            break;
+        case "QUARTERLY":
+            $months = 3;
+            break;
+        case "BIANNUAL":
+            $months = 6;
+            break;
+        case "YEARLY":
+            $months = 12;
+            break;
+    }
+
+    $startDate->addMonths($months);
+
+    $date = $startDate->format('Y-m');
+
+    return "$date-" . str_pad($day, 2, '0', STR_PAD_LEFT);
+}
 
 function getPaymentItemByInvoiceItem($invoiceItem)
 {
@@ -207,13 +234,36 @@ function getPaymentItemByInvoiceItem($invoiceItem)
                     $packageId = $hostingItem->packageid;
                     $product = Capsule::table('tblproducts')->where('id', '=', $packageId)->first();
                     $recurringCycles = $product->recurringcycles;
+                    $prorataBilling = $product->proratabilling;
 
                     $recurringItem = getRecurringInfo($interval, $recurringCycles);
+
+                    debugLog($prorataBilling == 1, '$prorataBilling');
+
+                    $startDate = Carbon::now()->format('Y-m-d');
+                    $endDate = $recurringItem->endDate;
+
+                    if (!$recurringItem->invalidItem) {
+                        if ($prorataBilling == 1) {
+                            /// Set preferred date as start date because do_initial_payment is always true
+                            $startDate = getStartDate($recurringItem->interval, $product->proratadate);
+                        }
+
+                        debugLog($product->autoterminatedays, 'autoTerminateDays');
+
+                        if (($product->autoterminatedays != 0) && ($recurringCycles == 0)) {
+                            $endDate = Carbon::now()->addDays($product->autoterminatedays)->format('Y-m-d');
+                        }
+                    }
+
+                    debugLog($startDate, '$startDate');
+                    debugLog($endDate, '$endDate');
 
                     $paymentItem->isRecurring = true;
                     $paymentItem->dontExpire = $recurringItem->dontExpire;
                     $paymentItem->interval = $recurringItem->interval;
-                    $paymentItem->endDate = $recurringItem->endDate;
+                    $paymentItem->endDate = $endDate;
+                    $paymentItem->startDate = $startDate;
                     $paymentItem->invalidItem = $recurringItem->invalidItem;
                     $paymentItem->invalidDescription = $recurringItem->invalidDescription;
                     $paymentItem->amount = $hostingItem->amount;

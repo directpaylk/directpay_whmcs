@@ -14,6 +14,7 @@ function getRecurringItemsWithScheduleId($id) {
 }
 
 function saveSubscriptionForInvoice($invoiceId, $scheduleId) {
+    // TODO: add subscriptionId for domains, addons
     $hostingItems = Capsule::table('tblinvoiceitems')
         ->where([
             ['invoiceid', '=', $invoiceId],
@@ -35,6 +36,7 @@ function saveSubscriptionForInvoice($invoiceId, $scheduleId) {
 function getLatestInvoiceId($scheduleId, $invoiceId) {
     $newInvoiceId = $invoiceId;
 
+    // TODO: check for domains, addons
     $hostingItem = Capsule::table('tblhosting')
         ->where('subscriptionid', '=', $scheduleId)
         ->orderBy('id', 'DESC')
