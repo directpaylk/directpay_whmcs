@@ -148,7 +148,7 @@ $invoiceId = $_GET['invoice'];
 
 $success = false;
 $responseValidation = '';
-$zeroFee = "0";
+$zeroFee = 0.00;
 
 $authHeaders = explode(' ', $headers['Authorization']);
 
@@ -168,8 +168,11 @@ if (count($authHeaders) == 2) {
 
 if ($success) {
     if ($transactionType == RECURRING) {
-        $itemExists = getRecurringItemsWithScheduleId($scheduleId);
-        echo " Found recurring products: " . sizeof($itemExists) . ". ";
+        $itemExists = Capsule::table('tblhosting')
+            ->where('subscriptionid', '=', $scheduleId)
+            ->get();
+
+        echo " SchId $scheduleId recurring products: " . sizeof($itemExists) . ". ";
 
         if (sizeof($itemExists) > 0) {
 //            logActivity('Recurring Subscription exists. Invoice ID: ' . $invoiceId);
@@ -182,20 +185,6 @@ if ($success) {
         }
     }
 }
-
-/**
- * Log Transaction.
- *
- * Add an entry to the Gateway Log for debugging purposes.
- *
- * The debug data can be a string or an array. In the case of an
- * array it will be
- *
- * @param string $gatewayName Display label
- * @param string|array $debugData Data to log
- * @param string $transactionStatus Status
- */
-logTransaction($gatewayParams['name'], json_encode($postBody), "Invoice: " . $invoiceId . " | Transaction Status: " . $transactionStatus . $responseValidation);
 
 /**
  * Validate Callback Invoice ID.
@@ -224,6 +213,20 @@ $invoiceId = checkCbInvoiceID($invoiceId, $gatewayParams['name']);
  */
 checkCbTransID($transactionId);
 
+/**
+ * Log Transaction.
+ *
+ * Add an entry to the Gateway Log for debugging purposes.
+ *
+ * The debug data can be a string or an array. In the case of an
+ * array it will be
+ *
+ * @param string $gatewayName Display label
+ * @param string|array $debugData Data to log
+ * @param string $transactionStatus Status
+ */
+logTransaction($gatewayParams['name'], json_encode($postBody), "Invoice: " . $invoiceId . " | Transaction Status: " . $transactionStatus . $responseValidation);
+
 if ($success) {
     if ($transactionStatus == 'SUCCESS') {
         /**
@@ -242,7 +245,7 @@ if ($success) {
             $transactionId,
             $paymentAmount,
             $zeroFee,
-            $gatewayModuleName
+            $gatewayParams['name']
         );
 
         echo " Invoice added successfully. InvoiceId: $invoiceId ";
