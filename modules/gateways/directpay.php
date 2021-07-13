@@ -157,11 +157,11 @@ function directpay_link($params)
             debugLog($totalTax, '$totalTax');
 
             $requestData["type"] = "RECURRING";
-            $requestData["amount"] = number_format($recurringItem['recurring_amount'] + $totalTax, 2, '.', '');
+            $requestData["initial_amount"] = $amount ? (string)$amount : "0.00";
+            $requestData["recurring_amount"] = number_format($recurringItem['recurring_amount'] + $totalTax, 2, '.', '');
             $requestData["start_date"] = $recurringItem['start_date'];
             $requestData["end_date"] = $recurringItem['end_date'];
             $requestData["do_initial_payment"] = true;
-            $requestData["initial_amount"] = $amount ? (string)$amount : "0.00";
             $requestData["interval"] = convertInterval($recurringItem['interval']);
         }
 
