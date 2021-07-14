@@ -7,13 +7,7 @@ require_once __DIR__ . '/../../../includes/invoicefunctions.php';
 
 use WHMCS\Database\Capsule;
 
-$gatewayResult = [
-    'invoice_id' => 0,
-    'status' => 400,
-    'new_subscription' => false,
-    'recurring_items' => 0,
-    'item_data' => []
-];
+$gatewayResult = [];
 
 function getRecurringItemsWithScheduleId($id)
 {
@@ -222,19 +216,16 @@ if ($success) {
             ->where('subscriptionid', '=', $scheduleId)
             ->get();
 
-//        echo " SchId $scheduleId recurring products: " . sizeof($itemExists) . ". ";
-        $gatewayResult['recurring_items'] = sizeof($itemExists);
+        echo " SchId $scheduleId recurring products: " . sizeof($itemExists) . ". ";
 
         if (sizeof($itemExists) > 0) {
 //            logActivity('Recurring Subscription exists. Invoice ID: ' . $invoiceId);
-//            echo " Subscription exists. ";
+            echo " Subscription exists. ";
             $invoiceId = getLatestInvoiceId($scheduleId, $invoiceId);
         } else {
             logActivity('New Recurring Subscription. Invoice ID: ' . $invoiceId);
-//            echo " New subscription. ";
-            $saveResult = saveSubscriptionForInvoice($invoiceId, $scheduleId);
-            $gatewayResult['new_subscription'] = true;
-            $gatewayResult['item_data'] = $saveResult;
+            echo " New subscription. ";
+            $gatewayResult['item_data'] = saveSubscriptionForInvoice($invoiceId, $scheduleId);
         }
     }
 }
@@ -301,14 +292,10 @@ if ($success) {
             $gatewayParams['name']
         );
 
-//        echo " Invoice added successfully. InvoiceId: $invoiceId ";
-        $gatewayResult = [
-            'invoice_id' => $invoiceId,
-            'status' => 200
-        ];
+        echo " Invoice added successfully. InvoiceId: $invoiceId ";
     }
 }
 
-var_dump($gatewayResult);
+echo json_encode($gatewayResult);
 
 //header("Location: ".$gatewayParams['systemurl'].'viewinvoice.php?id='.$invoiceId);
