@@ -7,13 +7,40 @@ require_once __DIR__ . '/../../../includes/invoicefunctions.php';
 
 use WHMCS\Database\Capsule;
 
-function getRecurringItemsWithScheduleId($id) {
+$gatewayResult = [
+    'invoice_id' => 0,
+    'status' => 400,
+    'new_subscription' => false,
+    'recurring_items' => 0,
+    'item_data' => []
+];
+
+function getRecurringItemsWithScheduleId($id)
+{
     return Capsule::table('tblhosting')
         ->where('subscriptionid', '=', $id)
         ->get();
 }
 
-function saveSubscriptionForInvoice($invoiceId, $scheduleId) {
+function saveSubscriptionForInvoice($invoiceId, $scheduleId)
+{
+    $hostingTotal = updateHostingItems($invoiceId, $scheduleId);
+    $domainTotal = updateDomainItems($invoiceId, $scheduleId);
+    $invoiceDetails = updateInvoiceItems($invoiceId, $scheduleId);
+
+    return [
+        'hosting' => $hostingTotal,
+        'domain' => $domainTotal,
+        'invoice' => $invoiceDetails
+    ];
+
+}
+
+function updateHostingItems($invoiceId, $scheduleId)
+{
+
+    $itemCount = 0;
+
     $hostingItems = Capsule::table('tblinvoiceitems')
         ->where([
             ['invoiceid', '=', $invoiceId],
@@ -21,20 +48,9 @@ function saveSubscriptionForInvoice($invoiceId, $scheduleId) {
         ])
         ->get();
 
-    $domainItems = Capsule::table('tblinvoiceitems')
-        ->where('invoiceid', '=', $invoiceId)
-        ->whereIn('type', ['Domain', 'DomainRegister', 'DomainTransfer'])
-        ->get();
+    foreach ($hostingItems as $item) {
+        $itemCount++;
 
-    if(!$hostingItems) {
-        echo " No hosting items for invoice: $invoiceId. ";
-    }
-
-    if(!$domainItems) {
-        echo " No Domain items for invoice: $invoiceId. ";
-    }
-
-    foreach ($hostingItems as $item){
         Capsule::table('tblhosting')
             ->where('id', '=', $item->relid)
             ->update(['subscriptionid' => $scheduleId]);
@@ -50,14 +66,48 @@ function saveSubscriptionForInvoice($invoiceId, $scheduleId) {
         }
     }
 
-    foreach ($domainItems as $item){
+    return $itemCount;
+}
+
+function updateDomainItems($invoiceId, $scheduleId)
+{
+    $itemCount = 0;
+
+    $domainItems = Capsule::table('tblinvoiceitems')
+        ->where('invoiceid', '=', $invoiceId)
+        ->whereIn('type', ['Domain', 'DomainRegister', 'DomainTransfer'])
+        ->get();
+
+    foreach ($domainItems as $item) {
+        $itemCount++;
+
         Capsule::table('tbldomains')
             ->where('id', '=', $item->relid)
             ->update(['subscriptionid' => $scheduleId]);
     }
+
+    return $itemCount;
 }
 
-function getLatestInvoiceId($scheduleId, $invoiceId) {
+function updateInvoiceItems($invoiceId, $scheduleId)
+{
+    $invoiceDetails = [];
+    $invoiceItems = Capsule::table('tblinvoiceitems')
+        ->where([
+            ['invoiceid', '=', $invoiceId],
+            ['type', '=', 'Invoice']
+        ])
+        ->get();
+
+    foreach ($invoiceItems as $item) {
+        $invoiceDetails[$item->relid] = saveSubscriptionForInvoice($item->relid, $scheduleId);
+    }
+
+    return $invoiceDetails;
+}
+
+function getLatestInvoiceId($scheduleId, $invoiceId)
+{
     $newInvoiceId = $invoiceId;
 
     $hostingItem = Capsule::table('tblhosting')
@@ -172,16 +222,19 @@ if ($success) {
             ->where('subscriptionid', '=', $scheduleId)
             ->get();
 
-        echo " SchId $scheduleId recurring products: " . sizeof($itemExists) . ". ";
+//        echo " SchId $scheduleId recurring products: " . sizeof($itemExists) . ". ";
+        $gatewayResult['recurring_items'] = sizeof($itemExists);
 
         if (sizeof($itemExists) > 0) {
 //            logActivity('Recurring Subscription exists. Invoice ID: ' . $invoiceId);
-            echo " Subscription exists. ";
+//            echo " Subscription exists. ";
             $invoiceId = getLatestInvoiceId($scheduleId, $invoiceId);
         } else {
             logActivity('New Recurring Subscription. Invoice ID: ' . $invoiceId);
-            echo " New subscription. ";
-            saveSubscriptionForInvoice($invoiceId, $scheduleId);
+//            echo " New subscription. ";
+            $saveResult = saveSubscriptionForInvoice($invoiceId, $scheduleId);
+            $gatewayResult['new_subscription'] = true;
+            $gatewayResult['item_data'] = $saveResult;
         }
     }
 }
@@ -248,8 +301,14 @@ if ($success) {
             $gatewayParams['name']
         );
 
-        echo " Invoice added successfully. InvoiceId: $invoiceId ";
+//        echo " Invoice added successfully. InvoiceId: $invoiceId ";
+        $gatewayResult = [
+            'invoice_id' => $invoiceId,
+            'status' => 200
+        ];
     }
 }
+
+var_dump($gatewayResult);
 
 //header("Location: ".$gatewayParams['systemurl'].'viewinvoice.php?id='.$invoiceId);
