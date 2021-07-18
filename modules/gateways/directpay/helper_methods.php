@@ -272,8 +272,8 @@ function getPaymentItemByInvoiceItem($invoiceItem)
                 break;
             case 'DOMAINREGISTER':
             case 'DOMAINTRANSFER':
-            case 'DOMAINRENEW':
-            case 'DOMAIN':
+//            case 'DOMAINRENEW':
+//            case 'DOMAIN':
                 $domainItem = Capsule::table('tbldomains')->where('id', '=', $invoiceItemRelId)->first();
 
                 if (!$domainItem) {

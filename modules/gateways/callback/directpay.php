@@ -46,7 +46,10 @@ function updateHostingItems($invoiceId, $scheduleId)
         $itemCount++;
 
         Capsule::table('tblhosting')
-            ->where('id', '=', $item->relid)
+            ->where([
+                ['id', '=', $item->relid],
+                ['billingcycle', '!=', 'One Time'],
+            ])
             ->update(['subscriptionid' => $scheduleId]);
 
         try {
@@ -216,11 +219,11 @@ if ($success) {
             ->where('subscriptionid', '=', $scheduleId)
             ->get();
 
-        echo " SchId $scheduleId recurring products: " . sizeof($itemExists) . ". ";
+        echo " ScheduleId: $scheduleId. ";
 
         if (sizeof($itemExists) > 0) {
 //            logActivity('Recurring Subscription exists. Invoice ID: ' . $invoiceId);
-            echo " Subscription exists. ";
+            echo " Existing subscription. ";
             $invoiceId = getLatestInvoiceId($scheduleId, $invoiceId);
         } else {
             logActivity('New Recurring Subscription. Invoice ID: ' . $invoiceId);
@@ -292,7 +295,7 @@ if ($success) {
             $gatewayParams['name']
         );
 
-        echo " Invoice added successfully. InvoiceId: $invoiceId ";
+        echo " Invoice added successfully. InvoiceId: $invoiceId. ";
     }
 }
 
