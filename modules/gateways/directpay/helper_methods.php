@@ -271,7 +271,7 @@ function getPaymentItemByInvoiceItem($invoiceItem)
 
                 break;
             case 'DOMAINREGISTER':
-            case 'DOMAINTRANSFER':
+//            case 'DOMAINTRANSFER':
 //            case 'DOMAINRENEW':
 //            case 'DOMAIN':
                 $domainItem = Capsule::table('tbldomains')->where('id', '=', $invoiceItemRelId)->first();
@@ -493,7 +493,7 @@ function getPaymentItemByInvoiceItem($invoiceItem)
                                 } else {
                                     if ($_paymentItem->interval != $inv_interval) {
                                         $inv_ContainInvalidProduct = true;
-                                        $inv_InvalidDescription = 'Cannot proceed mass payment, recurring frequencies does not match. Please try payment as individual invoices.';
+                                        $inv_InvalidDescription = 'Cannot proceed mass payment, recurring frequencies do not match. Please try payment as individual invoices.';
                                         break;
                                     }
                                 }
