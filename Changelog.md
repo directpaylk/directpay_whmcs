@@ -2,7 +2,7 @@
 
 All notable changes to this plugin will be documented in this file.
 
-## [1.3.0](hhttps://github.com/directpaylk/directpay_whmcs/releases/tag/v1.3.0) - Jul 12, 2021
+## [1.3.0](hhttps://github.com/directpaylk/directpay_whmcs/releases/tag/v1.3.0) - Jul 19, 2021
 
 ### Added
 - Prorata Billing Option.
