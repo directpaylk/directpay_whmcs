@@ -9,13 +9,6 @@ use WHMCS\Database\Capsule;
 
 $gatewayResult = [];
 
-function getRecurringItemsWithScheduleId($id)
-{
-    return Capsule::table('tblhosting')
-        ->where('subscriptionid', '=', $id)
-        ->get();
-}
-
 function saveSubscriptionForInvoice($invoiceId, $scheduleId)
 {
     $hostingTotal = updateHostingItems($invoiceId, $scheduleId);
@@ -146,6 +139,8 @@ function getLatestInvoiceId($scheduleId, $invoiceId)
             echo " Domain item not found for schedule: $scheduleId. ";
         }
     }
+
+    echo " Latest invoice: $newInvoiceId. ";
 
     return $newInvoiceId;
 }
