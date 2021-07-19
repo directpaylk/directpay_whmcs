@@ -5,6 +5,147 @@ require_once __DIR__ . '/../../../init.php';
 require_once __DIR__ . '/../../../includes/gatewayfunctions.php';
 require_once __DIR__ . '/../../../includes/invoicefunctions.php';
 
+use WHMCS\Database\Capsule;
+
+$gatewayResult = [];
+
+function saveSubscriptionForInvoice($invoiceId, $scheduleId)
+{
+    $hostingTotal = updateHostingItems($invoiceId, $scheduleId);
+    $domainTotal = updateDomainItems($invoiceId, $scheduleId);
+    $invoiceDetails = updateInvoiceItems($invoiceId, $scheduleId);
+
+    return [
+        'hosting' => $hostingTotal,
+        'domain' => $domainTotal,
+        'invoice' => $invoiceDetails
+    ];
+
+}
+
+function updateHostingItems($invoiceId, $scheduleId)
+{
+
+    $itemCount = 0;
+
+    $hostingItems = Capsule::table('tblinvoiceitems')
+        ->where([
+            ['invoiceid', '=', $invoiceId],
+            ['type', '=', 'Hosting']
+        ])
+        ->get();
+
+    foreach ($hostingItems as $item) {
+        $itemCount++;
+
+        Capsule::table('tblhosting')
+            ->where([
+                ['id', '=', $item->relid],
+                ['billingcycle', '!=', 'One Time'],
+            ])
+            ->update(['subscriptionid' => $scheduleId]);
+
+        try {
+            Capsule::table('tblhostingaddons')
+                ->where('hostingid', '=', $item->relid)
+                ->update(['subscriptionid' => $scheduleId]);
+        } catch (Exception $exception) {
+            echo " Exception in addon subId update. ";
+            debugLog('[tblhostingaddons] | EXCEPTION: ' . $exception->getMessage(), 'EXCEPTION');
+            debugLog('[tblhostingaddons] | EXCEPTION: ' . $exception->getLine(), 'EXCEPTION');
+        }
+    }
+
+    return $itemCount;
+}
+
+function updateDomainItems($invoiceId, $scheduleId)
+{
+    $itemCount = 0;
+
+    $domainItems = Capsule::table('tblinvoiceitems')
+        ->where('invoiceid', '=', $invoiceId)
+        ->whereIn('type', ['Domain', 'DomainRegister', 'DomainTransfer'])
+        ->get();
+
+    foreach ($domainItems as $item) {
+        $itemCount++;
+
+        Capsule::table('tbldomains')
+            ->where('id', '=', $item->relid)
+            ->update(['subscriptionid' => $scheduleId]);
+    }
+
+    return $itemCount;
+}
+
+function updateInvoiceItems($invoiceId, $scheduleId)
+{
+    $invoiceDetails = [];
+    $invoiceItems = Capsule::table('tblinvoiceitems')
+        ->where([
+            ['invoiceid', '=', $invoiceId],
+            ['type', '=', 'Invoice']
+        ])
+        ->get();
+
+    foreach ($invoiceItems as $item) {
+        $invoiceDetails[$item->relid] = saveSubscriptionForInvoice($item->relid, $scheduleId);
+    }
+
+    return $invoiceDetails;
+}
+
+function getLatestInvoiceId($scheduleId, $invoiceId)
+{
+    $newInvoiceId = $invoiceId;
+
+    $hostingItem = Capsule::table('tblhosting')
+        ->where('subscriptionid', '=', $scheduleId)
+        ->orderBy('id', 'DESC')
+        ->first();
+
+    if ($hostingItem) {
+        $invoiceItem = Capsule::table('tblinvoiceitems')
+            ->where('relid', '=', $hostingItem->id)
+            ->where('type', '=', 'Hosting')
+            ->first();
+
+        if ($invoiceItem) {
+            $newInvoiceId = $invoiceItem->invoiceid;
+        } else {
+            echo " Invoice item not found for schedule: $scheduleId. ";
+        }
+    } else {
+        echo " Hosting item not found for schedule: $scheduleId. ";
+
+        $domainItem = Capsule::table('tbldomains')
+            ->where('subscriptionid', '=', $scheduleId)
+            ->orderBy('id', 'DESC')
+            ->first();
+
+        if ($domainItem) {
+            $invoiceItem = Capsule::table('tblinvoiceitems')
+                ->where('relid', '=', $domainItem->id)
+                ->whereIn('type', ['Domain', 'DomainRegister', 'DomainTransfer'])
+                ->first();
+
+            if ($invoiceItem) {
+                $newInvoiceId = $invoiceItem->invoiceid;
+            } else {
+                echo " Invoice item not found for schedule: $scheduleId. ";
+            }
+        } else {
+            echo " Domain item not found for schedule: $scheduleId. ";
+        }
+    }
+
+    echo " Latest invoice: $newInvoiceId. ";
+
+    return $newInvoiceId;
+}
+
+
 // Detect module name from filename.
 $gatewayModuleName = basename(__FILE__, '.php');
 
@@ -34,18 +175,22 @@ foreach ($_SERVER as $key => $value) {
 
 logActivity('PAYMENT RESPONSE - headers: ' . json_encode($headers));
 
+const RECURRING = 'RECURRING';
+
 $transactionType = $postBody["type"];
 $orderId = $postBody["order_id"];
 $transactionId = $postBody["transaction_id"];
+$transactionType = $postBody["type"];
 $transactionStatus = isset($postBody["transaction"]) ? $postBody["transaction"]["status"] : "-";
 $transactionDesc = isset($postBody["transaction"]) ? $postBody["transaction"]["description"] : "-";
 $paymentAmount = isset($postBody["transaction"]) ? $postBody["transaction"]["amount"] : "0.00";
 $paymentCurrency = isset($postBody["transaction"]) ? $postBody["transaction"]["currency"] : "LKR";
+$scheduleId = isset($postBody["recurring"]) ? $postBody["recurring"]["id"] : "0";
 $invoiceId = $_GET['invoice'];
 
 $success = false;
 $responseValidation = '';
-$zeroFee = "0";
+$zeroFee = 0.00;
 
 $authHeaders = explode(' ', $headers['Authorization']);
 
@@ -61,6 +206,26 @@ if (count($authHeaders) == 2) {
 } else {
     $responseValidation = ' - Invalid Signature';
     echo " Invalid Signature. Headers: " . json_encode($headers) . " | Raw Headers: " . json_encode($_SERVER);
+}
+
+if ($success) {
+    if ($transactionType == RECURRING) {
+        $itemExists = Capsule::table('tblhosting')
+            ->where('subscriptionid', '=', $scheduleId)
+            ->get();
+
+        echo " ScheduleId: $scheduleId. ";
+
+        if (sizeof($itemExists) > 0) {
+//            logActivity('Recurring Subscription exists. Invoice ID: ' . $invoiceId);
+            echo " Existing subscription. ";
+            $invoiceId = getLatestInvoiceId($scheduleId, $invoiceId);
+        } else {
+            logActivity('New Recurring Subscription. Invoice ID: ' . $invoiceId);
+            echo " New subscription. ";
+            $gatewayResult['item_data'] = saveSubscriptionForInvoice($invoiceId, $scheduleId);
+        }
+    }
 }
 
 /**
@@ -89,7 +254,6 @@ $invoiceId = checkCbInvoiceID($invoiceId, $gatewayParams['name']);
  * @param string $transactionId Unique Transaction ID
  */
 checkCbTransID($transactionId);
-
 
 /**
  * Log Transaction.
@@ -123,11 +287,13 @@ if ($success) {
             $transactionId,
             $paymentAmount,
             $zeroFee,
-            $gatewayModuleName
+            $gatewayParams['name']
         );
 
-        echo " Invoice added successfully. InvoiceId: $invoiceId ";
+        echo " Invoice added successfully. InvoiceId: $invoiceId. ";
     }
 }
+
+echo json_encode($gatewayResult);
 
 //header("Location: ".$gatewayParams['systemurl'].'viewinvoice.php?id='.$invoiceId);
