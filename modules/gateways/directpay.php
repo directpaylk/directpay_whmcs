@@ -199,17 +199,13 @@ function directpay_link($params)
         $getSession = json_decode($response);
 
         if ($getSession->status == 200) {
-            $link = $getSession->data->link;
-            $paymentRedirect = $link;
-        } else {
-            $paymentRedirect = $returnUrl;
-        }
-
-        $htmlOutput = '<form id="directpay_payment_form" method="GET" action="' . $paymentRedirect . '">
+            $htmlOutput = '<form id="directpay_payment_form" method="GET" action="' . $getSession->data->link . '">
                 <img style="cursor: pointer;" src="https://cdn.directpay.lk/live/gateway/dp_visa_master_logo.png" alt="DirectPay_payment" onclick="document.getElementById(\'directpay_payment_form\').submit();" max-width="20%" />
                 <input type="submit" value="' . $langPayNow . '">
             </form>';
-
+        } else {
+            $htmlOutput = "Could not proceed the payment. Please try again. If this problem persists, please contact the merchant.<br>(ErrorCode WHM". date('ymdHis') . ")";
+        }
     }
 
     return $htmlOutput;
