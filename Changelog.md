@@ -2,6 +2,11 @@
 
 All notable changes to this plugin will be documented in this file.
 
+## [1.3.1](hhttps://github.com/directpaylk/directpay_whmcs/releases/tag/v1.3.1) - Aug 11, 2021
+
+### Fixed
+- Some known issues while free products.
+
 ## [1.3.0](hhttps://github.com/directpaylk/directpay_whmcs/releases/tag/v1.3.0) - Jul 19, 2021
 
 ### Added
