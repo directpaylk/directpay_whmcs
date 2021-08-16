@@ -391,7 +391,9 @@ function getPaymentItemByInvoiceItem($invoiceItem)
                             }
                         }
 
-                        if (($interval != "") && ($interval != INT_ONETIME) && ($interval != 'FREE ACCOUNT')) {
+                        if($interval == 'FREE ACCOUNT') {
+                            debugLog('ITEM interval with FREE ACCOUNT', 'FREE ACCOUNT');
+                        } elseif (($interval != "") && ($interval != INT_ONETIME)) {
                             $recurringItem = getRecurringInfo($interval, $itemRecurFor);
                             $paymentItem->isRecurring = true;
                             $paymentItem->dontExpire = $recurringItem->dontExpire;
