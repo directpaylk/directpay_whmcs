@@ -69,12 +69,16 @@ function getRecurringInfoByInvoiceId($invoiceId)
             foreach ($items as $item) {
                 $paymentItem = getPaymentItemByInvoiceItem($item);
 
+                debugLog($paymentItem->interval, 'IN FOREACH INTERVAL =====');
+                debugLog(in_array(strtoupper($item->type), $mainProductsList), 'MAIN PRODUCT ? ');
+                debugLog(json_encode($paymentItem), 'IN FOREACH ITEM');
+
                 if (in_array(strtoupper($item->type), $mainProductsList)) {
-                    $mainProducts++;
-                    $mainProduct = $paymentItem;
 
                     /// Recurring is true if main product is a recurring
                     if ($paymentItem->isRecurring) {
+                        $mainProduct = $paymentItem;
+                        $mainProducts++;
                         $isRecurring = true;
 
                         /// Set main product interval if already not set
@@ -101,8 +105,11 @@ function getRecurringInfoByInvoiceId($invoiceId)
 //                    debugLog($recurringTotal, 'recurring total');
 //                    debugLog($paymentItem->amount, 'add amount');
 
+                        debugLog("Add $paymentItem->amount to $recurringTotal", 'Update Recurring Total');
                         $recurringTotal += $paymentItem->amount;
                     }
+                } else {
+                    debugLog('NOT RECURRING', 'NOT RECURRING');
                 }
 
             }
@@ -230,7 +237,7 @@ function getPaymentItemByInvoiceItem($invoiceItem)
 
                 $interval = strtoupper($hostingItem->billingcycle);
 
-                if ($interval != "ONE TIME") {
+                if (($interval != "") && ($interval != "ONE TIME") && ($interval != "FREE ACCOUNT")) {
                     $packageId = $hostingItem->packageid;
                     $product = Capsule::table('tblproducts')->where('id', '=', $packageId)->first();
                     $recurringCycles = $product->recurringcycles;
@@ -315,7 +322,7 @@ function getPaymentItemByInvoiceItem($invoiceItem)
 
                 $interval = strtoupper($addonItem->billingcycle);
 
-                if ($interval != INT_ONETIME) {
+                if (($interval != "") && ($interval != INT_ONETIME) && ($interval != 'FREE ACCOUNT')) {
                     $recurringItem = getRecurringInfo($interval, 0);
 
                     $paymentItem->isRecurring = true;
@@ -384,7 +391,9 @@ function getPaymentItemByInvoiceItem($invoiceItem)
                             }
                         }
 
-                        if ($interval != "") {
+                        if($interval != 'FREE ACCOUNT') {
+                            debugLog('ITEM interval with FREE ACCOUNT', 'FREE ACCOUNT');
+                        } elseif (($interval != "") && ($interval != INT_ONETIME)) {
                             $recurringItem = getRecurringInfo($interval, $itemRecurFor);
                             $paymentItem->isRecurring = true;
                             $paymentItem->dontExpire = $recurringItem->dontExpire;
@@ -416,7 +425,7 @@ function getPaymentItemByInvoiceItem($invoiceItem)
                 if ($promotion->recurring == 1) {
                     $interval = strtoupper($hostingItem->billingcycle);
 
-                    if ($interval != INT_ONETIME) {
+                    if (($interval != "") && ($interval != INT_ONETIME) && ($interval != 'FREE ACCOUNT')) {
                         $product = Capsule::table('tblproducts')->where('id', '=', $hostingItem->packageid)->first();
                         $recurringCycles = $product->recurringcycles;
                         $recurringItem = getRecurringInfo($interval, $recurringCycles);
