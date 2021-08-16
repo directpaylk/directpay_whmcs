@@ -2,6 +2,11 @@
 
 All notable changes to this plugin will be documented in this file.
 
+## [1.3.1](hhttps://github.com/directpaylk/directpay_whmcs/releases/tag/v1.3.1) - Aug 16, 2021
+
+### Changed
+- Processing of free account payments passed to gateway.
+
 ## [1.3.0](hhttps://github.com/directpaylk/directpay_whmcs/releases/tag/v1.3.0) - Jul 19, 2021
 
 ### Added
