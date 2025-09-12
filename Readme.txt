@@ -6,6 +6,8 @@ Installation
 2. Then, in the browser login to https://<your_server_domain>/admin/ and navigate to Setup > Payments > Payment Gateways to configure DirectPay Payment.
 3. Select All Payment Gateways tab and click on DirectPay.
 4. Fill in Merchant ID and Secret Key fields provided by DirectPay.
-5. Click on Save Changes to save payment gateway configurations.
+5. Select the payment processing mode. Choose "One-Time Payments Only" to disable recurring payment functionality.
+6. Enable detailed logging for debugging purposes.
+7. Click on Save Changes to save payment gateway configurations.
 
 NOTE: Before save changes, you can enable debug mode by checking SandBox Mode checkbox.
