@@ -161,8 +161,19 @@ if (!$gatewayParams['type']) {
 $postBody_raw = file_get_contents('php://input');
 $postBody = json_decode(base64_decode($postBody_raw), true);
 
+// Set global gateway params for logging
+global $gatewayParams;
+
 logActivity('PAYMENT RESPONSE - invoice_id: ' . $_GET['invoice']);
 logActivity('PAYMENT RESPONSE - body: ' . $postBody_raw);
+
+// Log detailed callback data
+logPaymentProcess('CALLBACK_RECEIVED', [
+    'raw_body' => $postBody_raw,
+    'decoded_body' => $postBody,
+    'invoice_id' => $_GET['invoice'] ?? 'unknown',
+    'server_data' => $_SERVER
+], $_GET['invoice'] ?? null);
 
 $headers = array();
 foreach ($_SERVER as $key => $value) {
@@ -194,18 +205,42 @@ $zeroFee = 0.00;
 
 $authHeaders = explode(' ', $headers['Authorization']);
 
+logPaymentProcess('SIGNATURE_VERIFICATION_START', [
+    'auth_headers' => $authHeaders,
+    'headers_count' => count($authHeaders),
+    'invoice_id' => $invoiceId
+], $invoiceId);
+
 if (count($authHeaders) == 2) {
     $hash = hash_hmac('sha256', $postBody_raw, $gatewayParams['secret']);
     if (strcmp($authHeaders[1], $hash) == 0) {
         $success = true;
         echo " Signature Verified. ";
+        
+        logPaymentProcess('SIGNATURE_VERIFIED', [
+            'signature_match' => true,
+            'invoice_id' => $invoiceId
+        ], $invoiceId);
     } else {
         $responseValidation = ' - Signature Verification Failed';
         echo " Signature Verification Failed. ";
+        
+        logDirectPayError('Signature Verification Failed', [
+            'expected_hash' => $hash,
+            'received_hash' => $authHeaders[1],
+            'invoice_id' => $invoiceId
+        ]);
     }
 } else {
     $responseValidation = ' - Invalid Signature';
     echo " Invalid Signature. Headers: " . json_encode($headers) . " | Raw Headers: " . json_encode($_SERVER);
+    
+    logDirectPayError('Invalid Signature Format', [
+        'auth_headers' => $authHeaders,
+        'headers_count' => count($authHeaders),
+        'all_headers' => $headers,
+        'invoice_id' => $invoiceId
+    ]);
 }
 
 if ($success) {
@@ -270,7 +305,21 @@ checkCbTransID($transactionId);
 logTransaction($gatewayParams['name'], json_encode($postBody), "Invoice: " . $invoiceId . " | Transaction Status: " . $transactionStatus . $responseValidation);
 
 if ($success) {
+    logPaymentProcess('CALLBACK_SUCCESS', [
+        'transaction_status' => $transactionStatus,
+        'transaction_id' => $transactionId,
+        'payment_amount' => $paymentAmount,
+        'invoice_id' => $invoiceId
+    ], $invoiceId);
+    
     if ($transactionStatus == 'SUCCESS') {
+        logPaymentProcess('PAYMENT_SUCCESS', [
+            'transaction_id' => $transactionId,
+            'payment_amount' => $paymentAmount,
+            'currency' => $paymentCurrency,
+            'invoice_id' => $invoiceId
+        ], $invoiceId);
+        
         /**
          * Add Invoice Payment.
          *
@@ -291,7 +340,25 @@ if ($success) {
         );
 
         echo " Invoice added successfully. InvoiceId: $invoiceId. ";
+        
+        logPaymentProcess('INVOICE_PAYMENT_ADDED', [
+            'invoice_id' => $invoiceId,
+            'transaction_id' => $transactionId,
+            'amount' => $paymentAmount
+        ], $invoiceId);
+    } else {
+        logPaymentProcess('PAYMENT_FAILED', [
+            'transaction_status' => $transactionStatus,
+            'transaction_id' => $transactionId,
+            'invoice_id' => $invoiceId
+        ], $invoiceId);
     }
+} else {
+    logPaymentProcess('CALLBACK_FAILED', [
+        'reason' => 'Signature verification failed',
+        'validation_error' => $responseValidation,
+        'invoice_id' => $invoiceId
+    ], $invoiceId);
 }
 
 echo json_encode($gatewayResult);

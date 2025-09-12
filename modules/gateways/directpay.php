@@ -65,6 +65,28 @@ function directpay_config()
             'Type' => 'yesno',
             'Description' => 'Enable debug mode',
         ),
+        'paymentMode' => array(
+            'FriendlyName' => 'Payment Mode',
+            'Type' => 'dropdown',
+            'Options' => array(
+                'both' => 'Both One-Time and Recurring Payments',
+                'onetime' => 'One-Time Payments Only',
+            ),
+            'Default' => 'both',
+            'Description' => 'Select the payment processing mode. Choose "One-Time Payments Only" to disable recurring payment functionality.',
+        ),
+        'debugLogging' => array(
+            'FriendlyName' => 'Enable Debug Logging',
+            'Type' => 'yesno',
+            'Description' => 'Enable detailed logging for debugging purposes. Logs are saved to /modules/gateways/logs/directpay.log',
+        ),
+        'logRetention' => array(
+            'FriendlyName' => 'Log Retention (days)',
+            'Type' => 'text',
+            'Size' => '5',
+            'Default' => '30',
+            'Description' => 'Number of days to keep log files (0 = keep forever). Logs are automatically cleared after this period.',
+        ),
     );
 }
 
@@ -79,12 +101,17 @@ function directpay_config()
  */
 function directpay_link($params)
 {
+    // Set global gateway params for logging
+    global $gatewayParams;
+    $gatewayParams = $params;
+    
     // Gateway Configuration Parameters
     $secret = $params['secret'];
     $merchantId = $params['merchantId'];
     $testMode = $params['sandBox'];
     $notifyUrl = $params['notifyUrl'];
     $logoUrl = $params['logoUrl'];
+    $paymentMode = $params['paymentMode'];
 
     // Invoice Parameters
     $invoiceId = $params['invoiceid'];
@@ -116,6 +143,17 @@ function directpay_link($params)
     $orderId = 'WH' . $invoiceId . date("ymdHis");
 
     $responseUrl = $notifyUrl . '?invoice=' . $invoiceId;
+    
+    // Log payment initiation
+    logPaymentProcess('PAYMENT_INITIATED', [
+        'invoice_id' => $invoiceId,
+        'amount' => $amount,
+        'currency' => $currencyCode,
+        'client_email' => $email,
+        'payment_mode' => $paymentMode,
+        'test_mode' => $testMode,
+        'order_id' => $orderId
+    ], $invoiceId);
 
     // API Connection Details
     if ($testMode == 'on') {
@@ -127,11 +165,30 @@ function directpay_link($params)
     $recurringItem = getRecurringInfoByInvoiceId($invoiceId);
 
     debugLog(json_encode($recurringItem), '$recurringItem');
+    
+    // Log recurring item analysis
+    logPaymentProcess('RECURRING_ANALYSIS', [
+        'recurring_item' => $recurringItem,
+        'payment_mode' => $paymentMode
+    ], $invoiceId);
 
     $htmlOutput = '';
 
-    if ($recurringItem['invalid']) {
+    // Check if merchant has selected one-time only mode but invoice has recurring items
+    if ($paymentMode === 'onetime' && $recurringItem['recurring'] && $recurringItem['recurring_amount'] != 0.00) {
+        $htmlOutput = "<img src='https://cdn.directpay.lk/live/gateway/dp_visa_master_logo.png' alt='DirectPay_payment' max-width='20%' /><br><p style='color:red;'>Recurring payments are disabled for this merchant. This invoice contains recurring items that cannot be processed with the current payment mode setting.</p>";
+        
+        logPaymentProcess('PAYMENT_BLOCKED', [
+            'reason' => 'Recurring payments disabled',
+            'recurring_amount' => $recurringItem['recurring_amount']
+        ], $invoiceId);
+    } elseif ($recurringItem['invalid']) {
         $htmlOutput = "<img src='https://cdn.directpay.lk/live/gateway/dp_visa_master_logo.png' alt='DirectPay_payment' max-width='20%' /><br><p>{$recurringItem['details']} <span style='color:red;'>*</span></p>";
+        
+        logPaymentProcess('PAYMENT_BLOCKED', [
+            'reason' => 'Invalid recurring item',
+            'details' => $recurringItem['details']
+        ], $invoiceId);
     } else {
         $requestData = [
             "merchant_id" => $merchantId,
@@ -151,7 +208,8 @@ function directpay_link($params)
             "description" => $description,
         ];
 
-        if ($recurringItem['recurring']) {
+        // Only process recurring payments if merchant has enabled recurring mode
+        if ($paymentMode === 'both' && $recurringItem['recurring'] && $recurringItem['recurring_amount'] != 0.00) {
             $totalTax = getTotalTaxAmount($invoiceId);
 
             debugLog($totalTax, '$totalTax');
@@ -166,6 +224,9 @@ function directpay_link($params)
         }
 
         debugLog(json_encode($requestData), 'Payment data');
+        
+        // Log API request details
+        logApiCall($gatewayUrl, $requestData, null, 'REQUEST');
 
         $dataString = base64_encode(json_encode($requestData));
         $signature = 'hmac ' . hash_hmac('sha256', $dataString, $secret);
@@ -191,20 +252,47 @@ function directpay_link($params)
         ));
 
         $response = curl_exec($ch);
-        if (curl_error($ch)) {
-            debugLog('Unable to fetch payment link: ' . curl_errno($ch) . ' - ' . curl_error($ch));
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlError = curl_error($ch);
+        $curlErrno = curl_errno($ch);
+        
+        if ($curlError) {
+            debugLog('Unable to fetch payment link: ' . $curlErrno . ' - ' . $curlError);
+            logDirectPayError('API Call Failed', [
+                'curl_error' => $curlError,
+                'curl_errno' => $curlErrno,
+                'endpoint' => $gatewayUrl,
+                'invoice_id' => $invoiceId
+            ]);
         }
+        
         curl_close($ch);
 
         $getSession = json_decode($response);
+        
+        // Log API response
+        logApiCall($gatewayUrl, $requestData, $response, $httpCode);
 
         if ($getSession->status == 200) {
             $htmlOutput = '<form id="directpay_payment_form" method="GET" action="' . $getSession->data->link . '">
                 <img style="cursor: pointer;" src="https://cdn.directpay.lk/live/gateway/dp_visa_master_logo.png" alt="DirectPay_payment" onclick="document.getElementById(\'directpay_payment_form\').submit();" max-width="20%" />
                 <input type="submit" value="' . $langPayNow . '">
             </form>';
+            
+            logPaymentProcess('PAYMENT_LINK_CREATED', [
+                'payment_link' => $getSession->data->link,
+                'session_id' => $getSession->data->id ?? 'unknown'
+            ], $invoiceId);
         } else {
-            $htmlOutput = "Could not proceed the payment. Please try again. If this problem persists, please contact the merchant.<br>(ErrorCode WHM". date('ymdHis') . ")";
+            $errorCode = 'WHM' . date('ymdHis');
+            $htmlOutput = "Could not proceed the payment. Please try again. If this problem persists, please contact the merchant.<br>(ErrorCode $errorCode)";
+            
+            logDirectPayError('Payment Link Creation Failed', [
+                'api_status' => $getSession->status ?? 'unknown',
+                'api_response' => $response,
+                'error_code' => $errorCode,
+                'invoice_id' => $invoiceId
+            ]);
         }
     }
 

@@ -15,23 +15,147 @@ const INT_TRIENNIALLY = "TRIENNIALLY";
 
 function debugLog($message, $key = '')
 {
-    if (false) {
+    global $gatewayParams;
+    
+    // Check if debug logging is enabled
+    $debugLoggingEnabled = isset($gatewayParams['debugLogging']) && $gatewayParams['debugLogging'] == 'on';
+    $sandboxMode = isset($gatewayParams['sandBox']) && $gatewayParams['sandBox'] == 'on';
+    
+    // Log to file if debug logging is enabled OR in sandbox mode
+    if ($debugLoggingEnabled || $sandboxMode) {
+        writeDirectPayLog('DEBUG', $message, ['key' => $key]);
+    }
+    
+    // Show on screen only in sandbox mode (compact display)
+    if ($sandboxMode) {
+        $escapedMessage = htmlspecialchars($message);
+        $escapedKey = htmlspecialchars($key);
         echo "
-            <div>
-                <p style='padding: 10px; 
-                          margin: 5px; 
+            <div style='padding: 1px 3px; 
+                          margin: 0.5px; 
                           display: inline-block; 
-                          background-color: white; 
-                          border: 2px solid red;
-                          font-weight: bold;
-                          letter-spacing: 1px;
-                          border-radius: 5px;'
-                          ><span style='font-weight: lighter'>$key : </span>$message
-                </p>
+                          background-color: #f8f9fa; 
+                          border: 1px solid #e9ecef;
+                          font-size: 12px;
+                          font-family: monospace;
+                          border-radius: 1px;
+                          max-width: 100%;
+                          word-break: break-all;
+                          line-height: 1.2;'
+                          ><span style='color: #495057; font-weight: bold;'>[$escapedKey]:</span> $escapedMessage
             </div>
         ";
     }
+}
 
+
+/**
+ * Write detailed logs to file for debugging and support
+ */
+function writeDirectPayLog($level, $message, $context = [])
+{
+    global $gatewayParams;
+    
+    // Check if logging should be enabled
+    $debugLoggingEnabled = isset($gatewayParams['debugLogging']) && $gatewayParams['debugLogging'] == 'on';
+    $sandboxMode = isset($gatewayParams['sandBox']) && $gatewayParams['sandBox'] == 'on';
+    
+    // Always log errors and payment events, but only log debug/info if enabled
+    $shouldLog = in_array($level, ['ERROR', 'PAYMENT', 'API']) || $debugLoggingEnabled || $sandboxMode;
+    
+    if (!$shouldLog) {
+        return;
+    }
+    
+    $logFile = __DIR__ . '/../../logs/directpay.log';
+    $logDir = dirname($logFile);
+    
+    // Create logs directory if it doesn't exist
+    if (!is_dir($logDir)) {
+        mkdir($logDir, 0755, true);
+    }
+    
+    $timestamp = date('Y-m-d H:i:s');
+    $contextStr = !empty($context) ? ' | Context: ' . json_encode($context, JSON_PRETTY_PRINT) : '';
+    $logMessage = "[$timestamp] [$level] $message$contextStr" . PHP_EOL;
+    
+    file_put_contents($logFile, $logMessage, FILE_APPEND | LOCK_EX);
+    
+    // Clear old logs if retention is configured
+    if (isset($gatewayParams['logRetention']) && $gatewayParams['logRetention'] > 0) {
+        clearOldLogs($gatewayParams['logRetention']);
+    }
+}
+
+/**
+ * Log payment processing details
+ */
+function logPaymentProcess($step, $data, $invoiceId = null)
+{
+    $context = [
+        'step' => $step,
+        'invoice_id' => $invoiceId,
+        'timestamp' => time(),
+        'data' => $data
+    ];
+    writeDirectPayLog('PAYMENT', "Payment Process: $step", $context);
+}
+
+/**
+ * Log API requests and responses
+ */
+function logApiCall($endpoint, $requestData, $responseData, $status = null)
+{
+    $context = [
+        'endpoint' => $endpoint,
+        'request' => $requestData,
+        'response' => $responseData,
+        'status' => $status
+    ];
+    writeDirectPayLog('API', "API Call to $endpoint", $context);
+}
+
+/**
+ * Log errors with detailed context
+ */
+function logDirectPayError($error, $context = [])
+{
+    $context['error'] = $error;
+    $context['backtrace'] = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 5);
+    writeDirectPayLog('ERROR', "DirectPay Error: $error", $context);
+}
+
+/**
+ * Get recent logs for support
+ */
+function getDirectPayLogs($lines = 100)
+{
+    $logFile = __DIR__ . '/../../logs/directpay.log';
+    
+    if (!file_exists($logFile)) {
+        return "No log file found at: $logFile";
+    }
+    
+    $logs = file($logFile);
+    return implode('', array_slice($logs, -$lines));
+}
+
+/**
+ * Clear old logs to prevent disk space issues
+ */
+function clearOldLogs($days = 30)
+{
+    $logFile = __DIR__ . '/../../logs/directpay.log';
+    
+    if (file_exists($logFile)) {
+        $fileTime = filemtime($logFile);
+        $cutoffTime = time() - ($days * 24 * 60 * 60);
+        
+        if ($fileTime < $cutoffTime) {
+            file_put_contents($logFile, '');
+            writeDirectPayLog('INFO', "Logs cleared after $days days", []);
+        }
+    }
 }
 
 function getRecurringInfoByInvoiceId($invoiceId)
