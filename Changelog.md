@@ -2,6 +2,22 @@
 
 All notable changes to this plugin will be documented in this file.
 
+## [1.3.2](https://github.com/directpaylk/directpay_whmcs/releases/tag/v1.3.2) - Sep 12 2025
+
+### Added
+- Payment Mode Options: Added one-time and recurring payment mode selection
+- Comprehensive Logging System: Complete file-based logging for debugging and support. All debug messages now saved to `/modules/gateways/logs/directpay.log`
+- Log Viewer Interface: Web-based log viewer accessible
+- Debug Configuration: Admin-configurable logging options in gateway settings
+- Log Management: Automatic log cleanup and retention settings
+
+### Changed
+- Payment Mode Selection: Merchants can now choose between "One-Time Only" or "Both One-Time and Recurring" payment modes
+- Recurring Payment Validation: Enhanced validation for recurring payments based on selected mode
+- Debug Display: Improved debug output with compact, non-intrusive styling
+- Payment Processing: Enhanced logging throughout payment flow for better debugging
+- Error Tracking: Detailed error logging with context and backtrace information
+
 ## [1.3.1](hhttps://github.com/directpaylk/directpay_whmcs/releases/tag/v1.3.1) - Aug 16, 2021
 
 ### Changed
